@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>GeneticTest</title>
+	
+    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+    <meta http-equiv="description" content="Genetic">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+  	<script type="text/javascript" src="2DEngine.v1.0.1.js"></script>
+
+	<style type="text/css">
+		
+		body{
+			margin: 0;
+			padding: 0;
+			text-align: center;
+		}
+		
+		#myCanvas{
+			margin-top: 5%;
+		}
+		
+	</style>
+	
+  </head>
+  	
+  <body>
+   	
+   	<canvas id="myCanvas" width="1000px" height="1000px"></canvas>
+   	
+  </body>
+  
+  <script type="text/javascript">
+
+  	 var rotateSpeed = 15;
+  	 
+  	 var forwardSpeed = 5;
+  	 
+  	 var canvas = document.getElementById('myCanvas');
+  	 
+  	 var engine = Engine2D.method.getInstance();
+  	 engine.showFPS = true;
+  	 engine.cache = false;
+  	 engine.init(canvas);
+  	 
+  	 var startScene = new Engine2D.scene();
+  	 startScene.name = "startScene";
+  	 startScene.fps = 60;
+  	 startScene.hitTest = true;
+  	 
+  	 var testLayer = new Engine2D.layer();
+  	 testLayer.name = "testLayer";
+  	 
+  	 startScene.update = function(){
+  	 	engine.clear();
+  	 }
+  	 
+  	 engine.addScene(startScene);
+  	 startScene.addLayer(testLayer);
+ 	
+  	 var one = null;
+  	 
+  	 /**
+  	 * 创建移动精灵
+  	 **/
+  	 for(var i = 0;i<1;i++){
+  	 	
+	  	 var testSpirit = new Engine2D.spirit();
+	  	 testSpirit.name = "agent"+i;
+	  	 testSpirit.spiritType = 0;
+	  	 testSpirit.substanceType = 1;
+	  	 testSpirit.orgType = 1;
+	  	 testSpirit.width = 5;
+	  	 testSpirit.height = 5;
+	  	 testSpirit.rotate = 360 * Math.random();
+	  	 testSpirit.x = 800 * Math.random();
+	  	 testSpirit.y = 800 * Math.random();
+	  	 testSpirit.style = "#7CFC00";
+	  	 testSpirit.isTake = false;
+	  	 
+	  	 if(i == 0){
+	  		one = testSpirit;
+	  	 }
+	  	 
+  	 	 testSpirit.update = function(){
+  	 		
+  	 	 }
+  	 	 
+  	 	 testSpirit.hitTest = function(hitSpirit){
+  	 		//console.log("inHeart");
+  	 	 }
+		 
+	  	 testLayer.addSpirit(testSpirit);
+		 
+	  	 var testAreaSpirit = new Engine2D.spirit();
+	  	 testAreaSpirit.name = testSpirit.name + "_testArea"+i;
+	  	 testAreaSpirit.spiritType = 0;
+	  	 testAreaSpirit.orgType = 1;
+	  	 testAreaSpirit.substanceType = 1;
+	  	 testAreaSpirit.isFollowParent = 0;
+	  	 testAreaSpirit.width = 20;
+	  	 testSpirit.height = 20;
+	  	 testAreaSpirit.rotate = 0;
+	  	 testAreaSpirit.relativeRotate = -30;
+	  	 testAreaSpirit.x = 0;
+	  	 testAreaSpirit.y = 0;
+	  	 testAreaSpirit.relativeX = 0;
+	  	 testAreaSpirit.relativeY = 0;
+	  	 testAreaSpirit.style = "#EE3B3B";
+	  	 testAreaSpirit.alpha = 0.3;
+		 
+		 testAreaSpirit.update = function(){
+		 	//this.style = "#EE3B3B";
+		 }
+		 
+		 testAreaSpirit.hitTest = function(hitSpirit){
+			 //console.log("in");
+  	 	 }
+		
+		 testSpirit.addchild(testAreaSpirit);
+		 
+  	 }
+	 
+	 /**
+	 * 创建墙壁(刚体)
+	 **/
+	 for(var i = 0;i<1;i++){
+	 	 var wallSpirit = new Engine2D.spirit();
+	  	 wallSpirit.name = "wall"+i;
+	  	 wallSpirit.spiritType = 0;
+	  	 wallSpirit.substanceType = 1;
+	  	 wallSpirit.orgType = 0;
+	  	 wallSpirit.width = 1000 * Math.random();
+	  	 wallSpirit.height = 1000 * Math.random();
+	  	 wallSpirit.rotate = 360 * Math.random();
+	  	 wallSpirit.x = 800 * Math.random();
+	  	 wallSpirit.y = 800 * Math.random();
+	  	 wallSpirit.style = "#D3D3D3";
+	  	 
+  	 	 wallSpirit.update = function(){
+  	 		
+  	 	 }
+  	 	 
+  	 	 wallSpirit.hitTest = function(hitSpirit){
+			console.log("in");
+  	 	 }
+	
+	  	 testLayer.addSpirit(wallSpirit);
+  	 	 
+	 }
+	 
+	 engine.mousedown = function(){
+
+		  //求点到圆心的距离
+		  var c = Math.pow(Math.pow(one.childs[one.name + "_testArea0"].x-engine.mouseX, 2) + Math.pow(one.childs[one.name + "_testArea0"].y-engine.mouseY, 2),0.5);
+		  //判断是否在原内
+		  if(c<=one.childs[one.name + "_testArea0"].width){
+			  one.isTake = true;
+		  }
+		 
+	 };
+	 
+	 engine.mouseup = function(){
+		 
+		  //求点到圆心的距离
+		  var c = Math.pow(Math.pow(one.childs[one.name + "_testArea0"].x-engine.mouseX, 2) + Math.pow(one.childs[one.name + "_testArea0"].y-engine.mouseY, 2),0.5);
+		  //判断是否在原内
+		  if(c<=one.childs[one.name + "_testArea0"].width){
+			  one.isTake = false;
+		  }
+		 
+	 };
+	 
+	 engine.mousemove = function(){
+
+		 if(one.isTake){
+			 one.x = engine.mouseX;
+			 one.y = engine.mouseY;
+		 }
+		   	  
+	 };
+	 
+  	 engine.runScene(startScene.name);
+  	 
+  </script>
+   
+</html>

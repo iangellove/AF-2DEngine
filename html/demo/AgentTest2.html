@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>GeneticTest</title>
+	
+    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+    <meta http-equiv="description" content="Genetic">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+  	<script type="text/javascript" src="2DEngine.v1.0.1.js"></script>
+
+	<style type="text/css">
+		
+		body{
+			margin: 0;
+			padding: 0;
+			text-align: center;
+		}
+		
+		#myCanvas{
+			margin-top: 5%;
+		}
+		
+	</style>
+	
+  </head>
+  	
+  <body>
+   	
+   	<canvas id="myCanvas" width="1000px" height="1000px"></canvas>
+   	
+  </body>
+  
+  <script type="text/javascript">
+  	 
+  	 var rotateSpeed = 5;
+  	 
+  	 var forwardSpeed = 3;
+  	 
+  	 var canvas = document.getElementById('myCanvas');
+  	 
+  	 var engine = Engine2D.method.getInstance();
+  	 
+  	 engine.init(canvas);
+  	 
+  	 var startScene = new Engine2D.scene();
+  	 startScene.name = "startScene";
+  	 startScene.fps = 60;
+  	 startScene.hitTest = true;
+  	 
+  	 var testLayer = new Engine2D.layer();
+  	 testLayer.name = "testLayer";
+  	 
+  	 startScene.update = function(){
+  	 	engine.clear();
+  	 }
+  	 
+  	 engine.addScene(startScene);
+  	 startScene.addLayer(testLayer);
+  	 
+  	 /**
+  	 * 创建移动精灵
+  	 **/
+  	 for(var i = 0;i<10;i++){
+  	 	
+	  	 var testSpirit = new Engine2D.spirit();
+	  	 testSpirit.name = "agent"+i;
+	  	 testSpirit.spiritType = 0;
+	  	 testSpirit.substanceType = 1;
+	  	 testSpirit.orgType = 1;
+	  	 testSpirit.width = 5;
+	  	 testSpirit.height = 5;
+	  	 testSpirit.rotate = 360 * Math.random();
+	  	 testSpirit.x = 800 * Math.random();
+	  	 testSpirit.y = 800 * Math.random();
+	  	 testSpirit.style = "#7CFC00";
+	  	 
+  	 	 testSpirit.update = function(){
+  	 		
+  	 	 	var random = Math.random();
+  	 	 	
+  	 	 	if(random<0.5){
+  	 	 		Engine2D.action.rotate(this,-rotateSpeed);
+  	 	 	}else{
+  	 	 		Engine2D.action.rotate(this,rotateSpeed);
+  	 	 	}
+  	 	 	
+  	 		Engine2D.action.forward(this,forwardSpeed,true);
+  	 	
+  	 	 }
+  	 	 
+  	 	 testSpirit.hitTest = function(hitSpirit){
+  	 	 	if(hitSpirit.name.indexOf("_testLine")<0){
+  	 	 		//hitSpirit.scene.removeChilds(hitSpirit.name);
+  	 	 	}
+  	 	 }
+
+	  	 testLayer.addSpirit(testSpirit);
+		 
+	  	 var testAreaSpirit = new Engine2D.spirit();
+	  	 testAreaSpirit.name = testSpirit.name + "_testArea";
+	  	 testAreaSpirit.spiritType = 0;
+	  	 testAreaSpirit.orgType = 1;
+	  	 testAreaSpirit.substanceType = 0;
+	  	 testAreaSpirit.isFollowParent = 0;
+	  	 testAreaSpirit.width = 30;
+	  	 testSpirit.height = 30;
+	  	 testAreaSpirit.rotate = 0;
+	  	 testAreaSpirit.relativeRotate = -30;
+	  	 testAreaSpirit.x = 0;
+	  	 testAreaSpirit.y = 0;
+	  	 testAreaSpirit.relativeX = 0;
+	  	 testAreaSpirit.relativeY = 0;
+	  	 testAreaSpirit.style = "#EE3B3B";
+	  	 testAreaSpirit.alpha = 0.3;
+		 
+		 testAreaSpirit.update = function(){
+		 	this.style = "#EE3B3B";
+		 }
+		 
+		 testAreaSpirit.hitTest = function(hitSpirit){
+		 	
+  	 	 }
+		
+		var testLineSpirit1 = new Engine2D.spirit();
+	  	 testLineSpirit1.name = testSpirit.name + "_testLine1";
+	  	 testLineSpirit1.spiritType = 0;
+	  	 testLineSpirit1.orgType = 2;
+	  	 testLineSpirit1.substanceType = 1;
+	  	 testLineSpirit1.isFollowParent = 0;
+	  	 testLineSpirit1.width = 30;
+	  	 testLineSpirit1.rotate = 0;
+	  	 testLineSpirit1.relativeRotate = -30;
+	  	 testLineSpirit1.x = 0;
+	  	 testLineSpirit1.y = 0;
+	  	 testLineSpirit1.relativeX = 0;
+	  	 testLineSpirit1.relativeY = 0;
+	  	 testLineSpirit1.style = "#EE3B3B";
+		 
+		 testLineSpirit1.update = function(){
+		 	this.style = "#EE3B3B";
+		 }
+		 
+		 testLineSpirit1.hitTest = function(hitSpirit){
+		 	//console.log(this.name+"===>hit:"+hitSpirit.name);
+  	 	 	this.style = "#7CFC00";
+  	 	 	
+  	 	 }
+  	 	 
+  	 	 var testLineSpirit2 = new Engine2D.spirit();
+	  	 testLineSpirit2.name = testSpirit.name + "_testLine2";
+	  	 testLineSpirit2.spiritType = 0;
+	  	 testLineSpirit2.orgType = 2;
+	  	 testLineSpirit2.substanceType = 1;
+	  	 testLineSpirit2.isFollowParent = 0;
+	  	 testLineSpirit2.width = 30;
+	  	 testLineSpirit2.rotate = 0;
+	  	 testLineSpirit2.relativeRotate = -10;
+	  	 testLineSpirit2.x = 0;
+	  	 testLineSpirit2.y = 0;
+	  	 testLineSpirit2.relativeX = 0;
+	  	 testLineSpirit2.relativeY = 0;
+	  	 testLineSpirit2.style = "#EE3B3B";
+		 
+		 testLineSpirit2.update = function(){
+		 	this.style = "#EE3B3B";
+		 }
+		 
+		 testLineSpirit2.hitTest = function(hitSpirit){
+		 	//console.log(this.name+"===>hit:"+hitSpirit.name);
+  	 	 	this.style = "#7CFC00";
+  	 	 	
+  	 	 }
+  	 	 
+  	 	 var testLineSpirit3 = new Engine2D.spirit();
+	  	 testLineSpirit3.name = testSpirit.name + "_testLine3";
+	  	 testLineSpirit3.spiritType = 0;
+	  	 testLineSpirit3.orgType = 2;
+	  	 testLineSpirit3.substanceType = 1;
+	  	 testLineSpirit3.isFollowParent = 0;
+	  	 testLineSpirit3.width = 30;
+	  	 testLineSpirit3.rotate = 0;
+	  	 testLineSpirit3.relativeRotate = 10;
+	  	 testLineSpirit3.x = 0;
+	  	 testLineSpirit3.y = 0;
+	  	 testLineSpirit3.relativeX = 0;
+	  	 testLineSpirit3.relativeY = 0;
+	  	 testLineSpirit3.style = "#EE3B3B";
+		 
+		 testLineSpirit3.update = function(){
+		 	this.style = "#EE3B3B";
+		 }
+		 
+		 testLineSpirit3.hitTest = function(hitSpirit){
+		 	//console.log(this.name+"===>hit:"+hitSpirit.name);
+  	 	 	this.style = "#7CFC00";
+  	 	 	
+  	 	 }
+		
+		 var testLineSpirit4 = new Engine2D.spirit();
+	  	 testLineSpirit4.name = testSpirit.name + "_testLine4";
+	  	 testLineSpirit4.spiritType = 0;
+	  	 testLineSpirit4.orgType = 2;
+	  	 testLineSpirit4.substanceType = 1;
+	  	 testLineSpirit4.isFollowParent = 0;
+	  	 testLineSpirit4.width = 30;
+	  	 testLineSpirit4.rotate = 0;
+	  	 testLineSpirit4.relativeRotate = 10;
+	  	 testLineSpirit4.x = 0;
+	  	 testLineSpirit4.y = 0;
+	  	 testLineSpirit4.relativeX = 0;
+	  	 testLineSpirit4.relativeY = 0;
+	  	 testLineSpirit4.style = "#EE3B3B";
+		 
+		 testLineSpirit4.update = function(){
+		 	this.style = "#EE3B3B";
+		 }
+		 
+		 testLineSpirit4.hitTest = function(hitSpirit){
+		 	//console.log(this.name+"===>hit:"+hitSpirit.name);
+  	 	 	this.style = "#7CFC00";
+  	 	 }
+		
+  	 	 testSpirit.addchild(testAreaSpirit);
+  	 	 testSpirit.addchild(testLineSpirit1);
+  	 	 testSpirit.addchild(testLineSpirit2);
+  	 	 testSpirit.addchild(testLineSpirit3);
+  	 	 testSpirit.addchild(testLineSpirit4);
+  	 }
+	 
+	 /**
+	 * 创建墙壁(刚体)
+	 **/
+	 for(var i = 0;i<5;i++){
+	 	 var wallSpirit = new Engine2D.spirit();
+	  	 wallSpirit.name = "wall"+i;
+	  	 wallSpirit.spiritType = 0;
+	  	 wallSpirit.substanceType = 1;
+	  	 wallSpirit.orgType = 0;
+	  	 wallSpirit.width = 300 * Math.random();
+	  	 wallSpirit.height = 300 * Math.random();
+	  	 wallSpirit.rotate = 360 * Math.random();
+	  	 wallSpirit.x = 800 * Math.random();
+	  	 wallSpirit.y = 800 * Math.random();
+	  	 wallSpirit.style = "#D3D3D3";
+	  	 
+  	 	 wallSpirit.update = function(){
+  	 		
+  	 	 }
+  	 	 
+  	 	 wallSpirit.hitTest = function(hitSpirit){
+  	 	 	
+  	 	 	console.log("in:"+hitSpirit.name);
+  	 	 	console.log("in:"+this.name);
+  	 	 	
+  	 	 	Engine2D.action.back(hitSpirit, forwardSpeed * 2, false);
+  	 	 }
+
+	  	 testLayer.addSpirit(wallSpirit);
+	 }
+	 
+  	 engine.runScene("startScene");
+  	 
+  </script>
+   
+</html>
