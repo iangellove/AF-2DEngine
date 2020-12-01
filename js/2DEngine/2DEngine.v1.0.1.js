@@ -344,7 +344,7 @@ Engine2D.spirit = function(){
 		
 	}
 	
-	this.hitTest = function(hitSpirit){
+	this.hitTest = function(hitSpirit,result){
 
 	}
 	
@@ -527,6 +527,15 @@ Engine2D.util.drawText = function(spirit){
 	spirit.context.fillText(spirit.name,spirit.x,spirit.y);
 }
 
+Engine2D.util.drawPoint = function(spirit,x,y,r,color,alpha){
+	spirit.context.beginPath();
+	spirit.context.fillStyle = color;//填充颜色,默认是黑色
+	spirit.context.globalAlpha = alpha;//透明度
+	spirit.context.arc(x,y,r,0,360,false);
+	spirit.context.fill();//画实心圆
+	spirit.context.closePath();
+}
+
 Engine2D.util.drawCircles = function(spirit){
 	spirit.context.beginPath();
 	spirit.context.fillStyle = spirit.style;//填充颜色,默认是黑色
@@ -628,12 +637,20 @@ Engine2D.engine.hitTest = function(scene){
 			for(var j = 0;j<scene.rigidBodyChilds.length;j++){
 				if(i != j){
 					
+					if(scene.rigidBodyChilds[i].parent!=undefined && scene.rigidBodyChilds[i].parent!=null
+							&& scene.rigidBodyChilds[j].parent!=undefined && scene.rigidBodyChilds[j].parent!=null
+							&& scene.rigidBodyChilds[i].parent.name == scene.rigidBodyChilds[i].parent.name){
+						break;
+					}
+					
 					if(scene.rigidBodyChilds[i].parent!=undefined && scene.rigidBodyChilds[i].parent!=null){
 
 						if(scene.rigidBodyChilds[i].parent.name != scene.rigidBodyChilds[j].name){
-
-							if(Engine2D.engine.typeHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j])){
-								scene.rigidBodyChilds[i].hitTest(scene.rigidBodyChilds[j]);
+							
+							let result = Engine2D.engine.typeHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j]);
+							
+							if(result){
+								Engine2D.engine.objHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j],result);
 							}
 							
 						}
@@ -643,17 +660,22 @@ Engine2D.engine.hitTest = function(scene){
 						if(scene.rigidBodyChilds[j].parent!=undefined && scene.rigidBodyChilds[j].parent!=null){
 							
 							if(scene.rigidBodyChilds[j].parent.name != scene.rigidBodyChilds[i].name){
+								
+								let result = Engine2D.engine.typeHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j]);
 
-								if(Engine2D.engine.typeHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j])){
-									scene.rigidBodyChilds[i].hitTest(scene.rigidBodyChilds[j]);
+								if(result){
+									Engine2D.engine.objHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j],result);
 								}
 								
 							}
 							
 						}else{
-
-							if(Engine2D.engine.typeHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j])){
-								scene.rigidBodyChilds[i].hitTest(scene.rigidBodyChilds[j]);
+							
+							let result = Engine2D.engine.typeHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j]);
+							
+							if(result){
+								Engine2D.engine.objHitTest(scene.rigidBodyChilds[i],scene.rigidBodyChilds[j],result);
+//								scene.rigidBodyChilds[i].hitTest(scene.rigidBodyChilds[j],result);
 							}
 							
 						}
@@ -666,6 +688,11 @@ Engine2D.engine.hitTest = function(scene){
 		
 	}
 	
+}
+
+Engine2D.engine.objHitTest = function(rigidBody1,rigidBody2,result){
+	rigidBody1.hitTest(rigidBody2,result);
+	rigidBody2.hitTest(rigidBody1,result);
 }
 
 Engine2D.engine.mouseListen = function(instance){
@@ -751,6 +778,12 @@ Engine2D.engine.typeHitTest = function(a, b) {
 //		return Engine2D.engine.circlesToLineCollisionNewTest(x,y,r,x1,y1,x2,y2);
 		
 	}else if((a.orgType == 0 && b.orgType == 2) || (a.orgType == 2 && b.orgType == 0)){  //fillRect to line
+		
+		if(a.orgType == 0){
+			return Engine2D.engine.RectToLineTest(a,b);
+		}else{
+			return Engine2D.engine.RectToLineTest(b,c);
+		}
 		
 	}
 	
@@ -1006,10 +1039,67 @@ Engine2D.engine.circlesToLineCollisionNewTest = function(x,y,r,x1,y1,x2,y2){
 	return true;
 }
 
+Engine2D.engine.RectToLineTest = function(a,b){
+	var leftTop = [a.x, a.y];
+	var rightTop = [a.x + a.width, a.y];
+	var rightBottom = [a.x + a.width, a.y + a.height];
+	var leftBottom = [a.x, a.y + a.height];
+	var angleOfRad = Engine2D.engine.Vec2.degToRad(a.rotate);
+
+	var rotateLeftTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftTop, angleOfRad);
+	var rotateRightTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightTop, angleOfRad);
+	var rotateRightBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightBottom, angleOfRad);
+	var rotateLeftBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftBottom, angleOfRad);
+	
+	var x1 = b.x;
+	var y1 = b.y;
+	var x2 = b.x + Engine2D.util.cos(b.rotate) * b.width;
+	var y2 = b.y + Engine2D.util.sin(b.rotate) * b.width;
+	
+	var result = false;
+	
+//	console.log(x1,y1);
+//	console.log(x2,y2);
+	
+//	Engine2D.util.drawPoint(a,x1,y1,2,"#0000FF",1);
+//	Engine2D.util.drawPoint(a,x2,y2,2,"#0000FF",1);
+//	
+//	Engine2D.util.drawPoint(b,rotateLeftTop.x,rotateLeftTop.y,2,"#0001FF",1);
+//	Engine2D.util.drawPoint(b,rotateLeftBottom.x,rotateLeftBottom.y,2,"#0001FF",1);
+	
+	result = Engine2D.engine.LineToLineTest(x1,y1,x2,y2,rotateLeftTop.x,rotateLeftTop.y,rotateLeftBottom.x,rotateLeftBottom.y);
+	
+	if(!result){
+		result = Engine2D.engine.LineToLineTest(x1,y1,x2,y2,rotateLeftTop.x,rotateLeftTop.y,rotateRightTop.x,rotateRightTop.y);
+	}
+	
+	if(!result){
+		result = Engine2D.engine.LineToLineTest(x1,y1,x2,y2,rotateRightTop.x,rotateRightTop.y,rotateRightBottom.x,rotateRightBottom.y);
+	}
+	
+	if(!result){
+		result = Engine2D.engine.LineToLineTest(x1,y1,x2,y2,rotateLeftBottom.x,rotateLeftBottom.y,rotateRightBottom.x,rotateRightBottom.y);
+	}
+		
+	return result;
+}
+
+Engine2D.engine.LineToLineTest = function(x_start_1,y_start_1,x_end_1,y_end_1,x_start_2,y_start_2,x_end_2,y_end_2){
+	var temp = ((y_end_2-y_start_2)*(x_end_1-x_start_1) - (x_end_2-x_start_2)*(y_end_1-y_start_1));
+	var t1 = ((x_end_2-x_start_2)*(y_start_1-y_start_2) - (y_end_2-y_start_2)*(x_start_1-x_start_2)) / temp;
+	var t2 = ((x_end_1-x_start_1)*(y_start_1-y_start_2) - (y_end_1-y_start_1)*(x_start_1-x_start_2)) / temp;
+	
+    if (t1 >= 0 && t1 <= 1 && t2 >= 0 && t2 <= 1) {
+    	
+      return {point:{x:t1*x_end_1,y:t1*y_end_1}};
+    }
+    
+    return false;
+}
+
 //圆与线段碰撞检测
 //圆心p(x, y), 半径r, 线段两端点p1(x1, y1)和p2(x2, y2)
 Engine2D.engine.circlesToLineCollisionTest = function(x,y,r,x1,y1,x2,y2){
-
 	var vx1 = x - x1;
 	var vy1 = y - y1;
 	var vx2 = x2 - x1;
