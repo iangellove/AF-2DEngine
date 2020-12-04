@@ -16,6 +16,8 @@
  * 			3.优化播放动画方法
  * 			4.优化原始图形统一渲染
  * 			5.添加离屏渲染
+ *          6.添加线与方形碰撞测试
+ *          7.添加方形与方形碰撞测试
  */
 var Engine2D = {};
 
@@ -734,6 +736,8 @@ Engine2D.engine.typeHitTest = function(a, b) {
 	 */
 	if(a.orgType == 0 && b.orgType == 0){  //fillRect to fillRect
 		
+		return Engine2D.engine.RectToRectTest(a,b);
+		
 	}else if(a.orgType == 1 && b.orgType == 1){  //circles to circles
 		
 		return Engine2D.engine.circlesCollisionTest(a,b);
@@ -1058,15 +1062,6 @@ Engine2D.engine.RectToLineTest = function(a,b){
 	
 	var result = false;
 	
-//	console.log(x1,y1);
-//	console.log(x2,y2);
-	
-//	Engine2D.util.drawPoint(a,x1,y1,2,"#0000FF",1);
-//	Engine2D.util.drawPoint(a,x2,y2,2,"#0000FF",1);
-//	
-//	Engine2D.util.drawPoint(b,rotateLeftTop.x,rotateLeftTop.y,2,"#0001FF",1);
-//	Engine2D.util.drawPoint(b,rotateLeftBottom.x,rotateLeftBottom.y,2,"#0001FF",1);
-	
 	result = Engine2D.engine.LineToLineTest(x1,y1,x2,y2,rotateLeftTop.x,rotateLeftTop.y,rotateLeftBottom.x,rotateLeftBottom.y);
 	
 	if(!result){
@@ -1082,6 +1077,67 @@ Engine2D.engine.RectToLineTest = function(a,b){
 	}
 		
 	return result;
+}
+
+Engine2D.engine.RectToRectTest = function(a,b){
+	var sidesA = Engine2D.engine.getRectSides(a);
+	var sidesB = Engine2D.engine.getRectSides(b);
+
+	var result = false;
+	
+	for(var sideA in sidesA){
+		
+		for(var sideB in sidesB){
+			result = Engine2D.engine.LineToLineTestV2(sideA,sideB);
+			if(!result){
+				return result;
+			}
+
+		}
+
+	}
+	
+	return result;
+}
+
+Engine2D.engine.getRectSides = function(r){
+	var leftTop = [a.x, a.y];
+	var rightTop = [a.x + a.width, a.y];
+	var rightBottom = [a.x + a.width, a.y + a.height];
+	var leftBottom = [a.x, a.y + a.height];
+	var angleOfRad = Engine2D.engine.Vec2.degToRad(a.rotate);
+
+	var rotateLeftTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftTop, angleOfRad);
+	var rotateRightTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightTop, angleOfRad);
+	var rotateRightBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightBottom, angleOfRad);
+	var rotateLeftBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftBottom, angleOfRad);
+	
+	var sides = new Array();
+	sides.push([rotateLeftTop.x,rotateLeftTop.y,rotateLeftBottom.x,rotateLeftBottom.y]);
+	sides.push([rotateLeftTop.x,rotateLeftTop.y,rotateRightTop.x,rotateRightTop.y]);
+	sides.push([rotateRightTop.x,rotateRightTop.y,rotateRightBottom.x,rotateRightBottom.y]);
+	sides.push([rotateLeftBottom.x,rotateLeftBottom.y,rotateRightBottom.x,rotateRightBottom.y]);
+	return sides;
+}
+
+Engine2D.engine.LineToLineTestV2 = function(lineA,lineB){
+	var x_start_1 = lineA[0];
+	var	y_start_1 = lineA[1]; 
+	var	x_end_1 = lineA[2];
+	var y_end_1 = lineA[3];
+	var x_start_2 = lineB[0];
+	var y_start_2 = lineB[1]; 
+	var x_end_2 = lineB[2];
+	var y_end_2 = lineB[3];
+	var temp = ((y_end_2-y_start_2)*(x_end_1-x_start_1) - (x_end_2-x_start_2)*(y_end_1-y_start_1));
+	var t1 = ((x_end_2-x_start_2)*(y_start_1-y_start_2) - (y_end_2-y_start_2)*(x_start_1-x_start_2)) / temp;
+	var t2 = ((x_end_1-x_start_1)*(y_start_1-y_start_2) - (y_end_1-y_start_1)*(x_start_1-x_start_2)) / temp;
+	
+    if (t1 >= 0 && t1 <= 1 && t2 >= 0 && t2 <= 1) {
+      return {point:{x:t1*x_end_1,y:t1*y_end_1}};
+    }
+    
+    return false;
 }
 
 Engine2D.engine.LineToLineTest = function(x_start_1,y_start_1,x_end_1,y_end_1,x_start_2,y_start_2,x_end_2,y_end_2){
