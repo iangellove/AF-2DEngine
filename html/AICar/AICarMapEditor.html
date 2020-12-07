@@ -7,7 +7,7 @@
     <meta http-equiv="description" content="Genetic">
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
-  	<script type="text/javascript" src="../2DEngine/2DEngine.v1.0.1.js"></script>
+  	<script type="text/javascript" src="../js/2DEngine.v1.0.1.js"></script>
 
 	<style type="text/css">
 		
@@ -19,10 +19,11 @@
 		
 		#myCanvas{
 			margin-top: 5%;
+			border: 1px solid #D3D3D3;
 		}
 		
 		.consoleDiv{
-			width: 100%;
+			width: 99%;
 			margin: 10px;
 		}
 		
@@ -32,7 +33,7 @@
   	
   <body>
    	
-   	<canvas id="myCanvas" width="1000px" height="1000px"></canvas>
+   	<canvas id="myCanvas" width="1600px" height="1000px"></canvas>
    	
    	<br/>
    	
@@ -67,6 +68,13 @@
 	   	<br/>
 	   	
 	   	x:<input id="x" type="text" value="0" disabled="disabled"/>,y:<input id="y" type="text" value="0" disabled="disabled"/>
+	   	
+	   	fileName:<input id="fileName" type="text" value="map"/>
+	   	<button onclick="saveMapJson()">save</button>
+	   	
+	   	load map:
+	   	<input type="file" onchange="showDataByBinaryString()" name="jsonFile" id="jsonFile" multiple="multiple"/>
+    	<button onclick="showDataByBinaryString()">load</button>
 	   	
    	</div>
    	
@@ -111,8 +119,8 @@
 	  	 testSpirit.spiritType = 0;
 	  	 testSpirit.substanceType = 1;
 	  	 testSpirit.orgType = 0;
-	  	 testSpirit.width = 30;
-	  	 testSpirit.height = 20;
+	  	 testSpirit.width = 26;
+	  	 testSpirit.height = 18;
 	  	 testSpirit.rotate = 360 * Math.random();
 	  	 testSpirit.x = 800 * Math.random();
 	  	 testSpirit.y = 800 * Math.random();
@@ -363,19 +371,48 @@
   		var width = document.getElementById('widthEdit').value;
   		var height = document.getElementById('heightEdit').value;
   		var rotate = document.getElementById('rotateEdit').value;
-  		console.log(rotate);
   		walls[name].width = width * 1;
   		walls[name].height = height * 1;
   		walls[name].rotate = rotate * 1;
-  	 }
+  	}
+  	
+  	function saveMapJson(){
+  		var json = getWallJson();
+  		var fileName = document.getElementById('fileName').value;
+  		saveJSON(json,fileName);
+  	}
   	 
+  	function getWallJson(){
+  		var jsonData = {};
+  		for(var key in walls){
+  			var once = {};
+  			once.name = walls[key].name;
+  			once.x = walls[key].x;
+  			once.y = walls[key].y;
+  			once.width = walls[key].width;
+  			once.height = walls[key].height;
+  			once.rotate = walls[key].rotate;
+  			once.spiritType = walls[key].spiritType;
+  			once.substanceType = walls[key].substanceType;
+  			once.orgType = walls[key].orgType;
+  			once.style = walls[key].style;
+  			once.alpha = walls[key].alpha;
+  			jsonData[key] = once;
+  		}
+  		
+  		return jsonData;
+  	}
+  	
   	function saveJSON(data, filename){
   		if(!data) {
   			alert('保存的数据为空');
   			return;
   		}
-  		if(!filename) 
+  		if(!filename) {
   			filename = 'json.json'
+  		}else{
+  			filename += ".json";
+  		}
   		if(typeof data === 'object'){
   			data = JSON.stringify(data, undefined, 4)
   		}
@@ -388,6 +425,101 @@
   		e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
   		a.dispatchEvent(e)
   	}
+  	
+  	function showDataByBinaryString() {
+        var resultFile = document.getElementById("jsonFile").files[0];
+      if (resultFile) {
+          var reader = new FileReader();
+          //异步方式
+			reader.onload = function(e) {
+              var urlData = this.result;
+              
+              var jsonObject = null;
+              
+              if(urlData!=null){
+            	  jsonObject = JSON.parse(urlData);
+              }
+              console.log(jsonObject);
+              loadMap(jsonObject);
+          };
+          reader.readAsBinaryString(resultFile);                
+      }
+  	}
+  	
+  	function loadMap(mapData){
+  		
+  		for(var key in mapData){
+  			
+  			addWallFromMap(mapData[key]);
+  			
+  		}
+  		
+  	}
+  	
+  	 //添加墙
+ 	 function addWallFromMap(wall){
+ 		 
+ 		 var wallSpirit = new Engine2D.spirit();
+	  	 wallSpirit.name = wall.name;
+	  	 console.log(wall.spiritType,wall.substanceType,wall.orgType);
+	  	 wallSpirit.spiritType = wall.spiritType;
+	  	 wallSpirit.substanceType = wall.substanceType;
+	  	 wallSpirit.orgType = wall.orgType;
+	  	 wallSpirit.width = wall.width;
+	  	 wallSpirit.height = wall.height;
+	  	 wallSpirit.rotate = wall.rotate;
+	  	 wallSpirit.x = wall.x;
+	  	 wallSpirit.y = wall.y;
+	  	 wallSpirit.style = wall.style;
+	  	 
+	 	 wallSpirit.update = function(){
+	 		
+	 	 }
+	 	 
+	 	 wallSpirit.hitTest = function(hitSpirit){
+	 	 	
+	 	 	//console.log("in:"+hitSpirit.name);
+	 	 	//console.log("in:"+this.name);
+	 	 	
+	 	 	if(hitSpirit.name.indexOf("wall")<0){
+	  	 	 	Engine2D.action.back(hitSpirit, forwardSpeed, true);
+	 	 	}
+	 	 	
+	 	 	//Engine2D.action.stop(hitSpirit);
+	 	 }
+		 
+	 	 walls[wallSpirit.name] = wallSpirit;
+	 	 
+	  	 testLayer.addSpirit(wallSpirit);
+ 		 
+	  	 var areaR = wallSpirit.width;
+	  	 
+	  	 if(wallSpirit.width > wallSpirit.height){
+	  		areaR = wallSpirit.height;
+	  	 }
+	  	 
+	  	 var testAreaSpirit = new Engine2D.spirit();
+	  	 testAreaSpirit.name = wallSpirit.name + "_testArea";
+	  	 testAreaSpirit.spiritType = 0;
+	  	 testAreaSpirit.orgType = 1;
+	  	 testAreaSpirit.substanceType = 1;
+	  	 testAreaSpirit.isFollowParent = 0;
+	  	 testAreaSpirit.width = areaR;
+	  	 testAreaSpirit.height = areaR;
+	  	 testAreaSpirit.rotate = 0;
+	  	 testAreaSpirit.relativeRotate = 0;
+	  	 testAreaSpirit.x = 0;
+	  	 testAreaSpirit.y = 0;
+	  	 testAreaSpirit.relativeX = 0;
+	  	 testAreaSpirit.relativeY = 0;
+	  	 testAreaSpirit.style = "#EE3B3B";
+	  	 testAreaSpirit.alpha = 0.3;
+		
+		 wallSpirit.addchild(testAreaSpirit);
+	  	 
+		 console.log(wallSpirit);
+		 
+ 	 }
   	
   </script>
    
