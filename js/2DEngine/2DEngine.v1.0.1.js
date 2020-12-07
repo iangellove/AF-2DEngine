@@ -319,14 +319,29 @@ Engine2D.spirit = function(){
 		}
 	};
 	
+	this.getXByCenterX = function(cx){
+		if(this.orgType == 1){
+			return cx;
+		}else{
+			return cx - this.width / 2;
+		}
+	};
+	
+	this.getYByCenterY = function(cy){
+		if(this.orgType == 1){
+			return cy;
+		}else{
+			return cy - this.height / 2;
+		}
+	};
+	
 	this.addchild = function(spirit){
 		if(spirit != null){
 			spirit.context = this.context;
 			spirit.parent = this;
 			spirit.scene = this.scene;
 			spirit.layer = this.layer;
-			if(spirit.position==0){
-				
+			if(spirit.position == 0){
 				spirit.x = this.centerX() + spirit.relativeX;
 				spirit.y = this.centerY() + spirit.relativeY;
 			}
@@ -364,8 +379,15 @@ Engine2D.spirit = function(){
 	this.fixedPosition = function(){
 		if(this.isFollowParent == 0 && this.parent != null){
 			this.rotate = this.parent.rotate + this.relativeRotate;
-			this.x = this.parent.x + this.relativeX;
-			this.y = this.parent.y + this.relativeY;
+			if(this.position == 0){
+				if(this.parent.orgType == 0){
+					this.x = this.parent.centerX() + this.relativeX;
+					this.y = this.parent.centerY() + this.relativeY;
+				}else{
+					this.x = this.parent.x + this.relativeX;
+					this.y = this.parent.y + this.relativeY;
+				}
+			}
 		}
 	}
 	
@@ -539,6 +561,7 @@ Engine2D.util.drawPoint = function(spirit,x,y,r,color,alpha){
 }
 
 Engine2D.util.drawCircles = function(spirit){
+
 	spirit.context.beginPath();
 	spirit.context.fillStyle = spirit.style;//填充颜色,默认是黑色
 	spirit.context.globalAlpha = spirit.alpha;//透明度
@@ -745,9 +768,7 @@ Engine2D.engine.typeHitTest = function(a, b) {
 	}else if(a.orgType == 2 && b.orgType == 2){  //line to line
 		
 	}else if((a.orgType == 1 && b.orgType == 0) || (a.orgType == 0 && b.orgType == 1)){  //fillRect to circles
-		
-//		return Engine2D.engine.IsCirlceCollisionRect(a,b);
-		
+
 		return Engine2D.engine.YDCollision(a,b);
 		
 	}else if((a.orgType == 1 && b.orgType == 2) || (a.orgType == 2 && b.orgType == 1)){  //circles to line
@@ -778,15 +799,13 @@ Engine2D.engine.typeHitTest = function(a, b) {
 		}
 		
 		return Engine2D.engine.circlesToLineCollisionTest(x,y,r,x1,y1,x2,y2);
-		
-//		return Engine2D.engine.circlesToLineCollisionNewTest(x,y,r,x1,y1,x2,y2);
-		
+
 	}else if((a.orgType == 0 && b.orgType == 2) || (a.orgType == 2 && b.orgType == 0)){  //fillRect to line
 		
 		if(a.orgType == 0){
 			return Engine2D.engine.RectToLineTest(a,b);
 		}else{
-			return Engine2D.engine.RectToLineTest(b,c);
+			return Engine2D.engine.RectToLineTest(b,a);
 		}
 		
 	}
@@ -987,11 +1006,7 @@ Engine2D.engine.YdetectCollision = function(rect, circle) {
 	} else {
 		cy = rotateCircleY;
 	}
-//	console.log('rotateCircleX', rotateCircleX);
-//	console.log('rotateCircleY', rotateCircleY);
-//	console.log('cx', cx);
-//	console.log('cy', cy);
-//	console.log(Engine2D.engine.distance(rotateCircleX, rotateCircleY, cx, cy) < circle.width)
+
 	if (Engine2D.engine.Vec2.distance2(rotateCircleX, rotateCircleY, cx, cy) < circle.width) {
 		return true;
 	}
@@ -1080,16 +1095,23 @@ Engine2D.engine.RectToLineTest = function(a,b){
 }
 
 Engine2D.engine.RectToRectTest = function(a,b){
+
 	var sidesA = Engine2D.engine.getRectSides(a);
 	var sidesB = Engine2D.engine.getRectSides(b);
 
 	var result = false;
 	
-	for(var sideA in sidesA){
+	for(var i=0;i<sidesA.length;i++){
 		
-		for(var sideB in sidesB){
+		var sideA = sidesA[i];
+		
+		for(var j=0;j<sidesB.length;j++){
+			
+			var sideB = sidesB[j];
+			
 			result = Engine2D.engine.LineToLineTestV2(sideA,sideB);
-			if(!result){
+
+			if(result){
 				return result;
 			}
 
@@ -1101,16 +1123,16 @@ Engine2D.engine.RectToRectTest = function(a,b){
 }
 
 Engine2D.engine.getRectSides = function(r){
-	var leftTop = [a.x, a.y];
-	var rightTop = [a.x + a.width, a.y];
-	var rightBottom = [a.x + a.width, a.y + a.height];
-	var leftBottom = [a.x, a.y + a.height];
-	var angleOfRad = Engine2D.engine.Vec2.degToRad(a.rotate);
+	var leftTop = [r.x, r.y];
+	var rightTop = [r.x + r.width, r.y];
+	var rightBottom = [r.x + r.width, r.y + r.height];
+	var leftBottom = [r.x, r.y + r.height];
+	var angleOfRad = Engine2D.engine.Vec2.degToRad(r.rotate);
 
-	var rotateLeftTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftTop, angleOfRad);
-	var rotateRightTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightTop, angleOfRad);
-	var rotateRightBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightBottom, angleOfRad);
-	var rotateLeftBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftBottom, angleOfRad);
+	var rotateLeftTop = Engine2D.engine.Vec2.rotatePoint([r.centerX(), r.centerY()], leftTop, angleOfRad);
+	var rotateRightTop = Engine2D.engine.Vec2.rotatePoint([r.centerX(), r.centerY()], rightTop, angleOfRad);
+	var rotateRightBottom = Engine2D.engine.Vec2.rotatePoint([r.centerX(), r.centerY()], rightBottom, angleOfRad);
+	var rotateLeftBottom = Engine2D.engine.Vec2.rotatePoint([r.centerX(), r.centerY()], leftBottom, angleOfRad);
 	
 	var sides = new Array();
 	sides.push([rotateLeftTop.x,rotateLeftTop.y,rotateLeftBottom.x,rotateLeftBottom.y]);
