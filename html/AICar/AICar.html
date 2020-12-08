@@ -8,7 +8,8 @@
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
   	<script type="text/javascript" src="../2DEngine/2DEngine.v1.0.1.js"></script>
-
+	<script type="text/javascript" src="NetwrokAI.js"></script>
+	
 	<style type="text/css">
 		
 		body{
@@ -49,11 +50,11 @@
   
   <script type="text/javascript">
   	 
-  	 var rotateSpeed = 5;
+  	 var rotateSpeed = 3.5;
   	 
-  	 var forwardSpeed = 3;
+  	 var forwardSpeed = 8;
   	 
-  	 var viewWidth = 160;
+  	 var viewWidth = 200;
   	 
   	 var maps = {};
   	 
@@ -88,6 +89,40 @@
   	 startScene.addLayer(testLayer);
 
   	 engine.runScene("startScene");
+  	 
+  	 //创建AI神经网络
+  	 function createAI(){
+  		 var nn = new NetWork.instance();
+  		 
+  		 var inputLayer = new NetWork.layer();
+  		 inputLayer.layerType = 0;
+  		 inputLayer.name = "inputLayer";
+  		 inputLayer.inputNum = 4;
+  		 inputLayer.outputNum = 4;
+  		 inputLayer.activeType = null;
+  		 
+  		 var fullyLayer1 = new NetWork.layer();
+  		 fullyLayer1.layerType = 1;
+  		 fullyLayer1.name = "fullyLayer1";
+  		 fullyLayer1.inputNum = 4;
+  		 fullyLayer1.outputNum = 20;
+  		 fullyLayer1.activeType = 0;
+  		 
+ 		 var fullyLayer2 = new NetWork.layer();
+ 		 fullyLayer2.layerType = 1;
+ 		 fullyLayer2.name = "fullyLayer2";
+ 		 fullyLayer2.inputNum = 20;
+ 		 fullyLayer2.outputNum = 1;
+ 		 fullyLayer2.activeType = 0;
+ 		 
+  		 nn.addLayer(inputLayer);
+  		 nn.addLayer(fullyLayer1);
+  		 nn.addLayer(fullyLayer2);
+  		 
+  		 nn.init();
+  		 
+  		 return nn;
+  	 } 
   	 
   	 function clearCarsView(){
 
@@ -137,16 +172,22 @@
   	  	 			
   	  	 			cars[this.name].survivalTime++;
   	  	 			
-  	  	  	 	 	var random = Math.random();
-  	  	  	 	 	
-  	  	  	 	 	if(random<0.5){
-  	  	  	 	 		Engine2D.action.rotate(this,-rotateSpeed);
-  	  	  	 	 	}else{
-  	  	  	 	 		Engine2D.action.rotate(this,rotateSpeed);
-  	  	  	 	 	}
-  	  	  	 	 	
-  	  	  	 		Engine2D.action.forward(this,forwardSpeed,true);
-  	  	  	 	
+  	  	 			if(cars[this.name].survivalTime > 1){
+
+  	  	  	 			var carInput = [cars[this.name].x1/viewWidth,cars[this.name].x2/viewWidth,cars[this.name].x3/viewWidth,cars[this.name].x4/viewWidth];
+  	  	  	 			//console.log(carInput);
+  	  	  	  	 	 	var random = cars[this.name].ai.forword(carInput);
+  	  	  	  	 	 	console.log(this.name,random);
+  	  	  	  	 	 	if(random<0.5){
+  	  	  	  	 	 		Engine2D.action.rotate(this,-rotateSpeed);
+  	  	  	  	 	 	}else{
+  	  	  	  	 	 		Engine2D.action.rotate(this,rotateSpeed);
+  	  	  	  	 	 	}
+  	  	  	  	 	 	
+  	  	  	  	 		Engine2D.action.forward(this,forwardSpeed,true);
+  	  	  	  	 	
+  	  	 			}
+  	  	 			
   	  	 		}
   	  	 		
   	  	 	 }
@@ -170,6 +211,7 @@
   	  		 onceCar.x4 = 0;
   	  		 onceCar.survivalTime = 0;
   	  	 	 onceCar.survival = true;
+  	  	 	 onceCar.ai = createAI();
 			 
   	  	 	 cars[testSpirit.name] = onceCar;
   	  	 	 
