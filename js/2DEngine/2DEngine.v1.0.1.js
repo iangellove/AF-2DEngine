@@ -17,7 +17,11 @@
  * 			4.优化原始图形统一渲染
  * 			5.添加离屏渲染
  *          6.添加线与方形碰撞测试
- *          7.添加方形与方形碰撞测试
+ *      version 1.0.1.1
+ * 		update in 2020-12-07 21:40:10
+ * 		update remark:
+ *          1.添加方形与方形碰撞测试
+ *          2.更换线段与线段碰撞测试
  */
 var Engine2D = {};
 
@@ -803,9 +807,9 @@ Engine2D.engine.typeHitTest = function(a, b) {
 	}else if((a.orgType == 0 && b.orgType == 2) || (a.orgType == 2 && b.orgType == 0)){  //fillRect to line
 		
 		if(a.orgType == 0){
-			return Engine2D.engine.RectToLineTest(a,b);
+			return Engine2D.engine.RectToLineTestV2(a,b);
 		}else{
-			return Engine2D.engine.RectToLineTest(b,a);
+			return Engine2D.engine.RectToLineTestV2(b,a);
 		}
 		
 	}
@@ -822,7 +826,7 @@ Engine2D.engine.Vec2.distance = function (v1, v2) {
 	var dx = v1.x - v2.x;
 	var	dy = v1.y - v2.y;
 	return Math.sqrt(dx * dx + dy * dy);
-};
+}
 
 Engine2D.engine.Vec2.distance2 = function(x1, y1, x2, y2) {
 	return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
@@ -834,15 +838,15 @@ Engine2D.engine.Vec2.degToRad = function (deg) {
 
 Engine2D.engine.Vec2.add = function (v1, v2) {
 	return new Engine2D.engine.Vec2(v1.x + v2.x, v1.y + v2.y);
-};
+}
 
 Engine2D.engine.Vec2.substract = function (v1, v2) {
 	return new Engine2D.engine.Vec2(v1.x - v2.x, v1.y - v2.y);
-};
+}
 
 Engine2D.engine.Vec2.dot = function (v1, v2) {
 	return v1.x * v2.x + v1.y * v2.y;
-};
+}
 
 
 Engine2D.engine.Vec2.rotatePoint = function (pivot, point, angle) {
@@ -1058,6 +1062,40 @@ Engine2D.engine.circlesToLineCollisionNewTest = function(x,y,r,x1,y1,x2,y2){
 	return true;
 }
 
+Engine2D.engine.RectToLineTestV2 = function(a,b){
+	var leftTop = [a.x, a.y];
+	var rightTop = [a.x + a.width, a.y];
+	var rightBottom = [a.x + a.width, a.y + a.height];
+	var leftBottom = [a.x, a.y + a.height];
+	var angleOfRad = Engine2D.engine.Vec2.degToRad(a.rotate);
+
+	var rotateLeftTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftTop, angleOfRad);
+	var rotateRightTop = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightTop, angleOfRad);
+	var rotateRightBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], rightBottom, angleOfRad);
+	var rotateLeftBottom = Engine2D.engine.Vec2.rotatePoint([a.centerX(), a.centerY()], leftBottom, angleOfRad);
+	
+	var lineA = {x:b.x,y:b.y};
+	var lineB = {x:b.x + Engine2D.util.cos(b.rotate) * b.width,y:b.y + Engine2D.util.sin(b.rotate) * b.width};
+
+	var result = false;
+	
+	result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftTop,rotateLeftBottom);
+	
+	if(!result){
+		result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftTop,rotateRightTop);
+	}
+	
+	if(!result){
+		result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateRightTop,rotateRightBottom);
+	}
+	
+	if(!result){
+		result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftBottom,rotateRightBottom);
+	}
+		
+	return result;
+}
+
 Engine2D.engine.RectToLineTest = function(a,b){
 	var leftTop = [a.x, a.y];
 	var rightTop = [a.x + a.width, a.y];
@@ -1109,7 +1147,7 @@ Engine2D.engine.RectToRectTest = function(a,b){
 			
 			var sideB = sidesB[j];
 			
-			result = Engine2D.engine.LineToLineTestV2(sideA,sideB);
+			result = Engine2D.engine.LineToLineTestV4(sideA,sideB);
 
 			if(result){
 				return result;
@@ -1154,9 +1192,9 @@ Engine2D.engine.LineToLineTestV2 = function(lineA,lineB){
 	var temp = ((y_end_2-y_start_2)*(x_end_1-x_start_1) - (x_end_2-x_start_2)*(y_end_1-y_start_1));
 	var t1 = ((x_end_2-x_start_2)*(y_start_1-y_start_2) - (y_end_2-y_start_2)*(x_start_1-x_start_2)) / temp;
 	var t2 = ((x_end_1-x_start_1)*(y_start_1-y_start_2) - (y_end_1-y_start_1)*(x_start_1-x_start_2)) / temp;
-	
+
     if (t1 >= 0 && t1 <= 1 && t2 >= 0 && t2 <= 1) {
-      return {point:{x:t1*x_end_1,y:t1*y_end_1}};
+       return {point:{x:t1*x_end_1,y:t1*y_end_1}};
     }
     
     return false;
@@ -1167,12 +1205,51 @@ Engine2D.engine.LineToLineTest = function(x_start_1,y_start_1,x_end_1,y_end_1,x_
 	var t1 = ((x_end_2-x_start_2)*(y_start_1-y_start_2) - (y_end_2-y_start_2)*(x_start_1-x_start_2)) / temp;
 	var t2 = ((x_end_1-x_start_1)*(y_start_1-y_start_2) - (y_end_1-y_start_1)*(x_start_1-x_start_2)) / temp;
 	
+	var denominator = (b.y - a.y)*(d.x - c.x) - (a.x - b.x)*(c.y - d.y);  
+	
     if (t1 >= 0 && t1 <= 1 && t2 >= 0 && t2 <= 1) {
-    	
+
       return {point:{x:t1*x_end_1,y:t1*y_end_1}};
     }
     
     return false;
+}
+
+Engine2D.engine.LineToLineTestV3 = function segmentsIntr(a, b, c, d){  
+	  
+    // 三角形abc 面积的2倍  
+    var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);  
+  
+    // 三角形abd 面积的2倍  
+    var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);   
+  
+    // 面积符号相同则两点在线段同侧,不相交 (对点在线段上的情况,本例当作不相交处理);  
+    if ( area_abc*area_abd>=0 ) {  
+        return false;  
+    }  
+  
+    // 三角形cda 面积的2倍  
+    var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);  
+    // 三角形cdb 面积的2倍  
+    // 注意: 这里有一个小优化.不需要再用公式计算面积,而是通过已知的三个面积加减得出.  
+    var area_cdb = area_cda + area_abc - area_abd ;  
+    if (  area_cda * area_cdb >= 0 ) {  
+        return false;  
+    }  
+  
+    //计算交点坐标  
+    var t = area_cda / ( area_abd- area_abc );  
+    var dx= t*(b.x - a.x),  
+        dy= t*(b.y - a.y);  
+    return { x: a.x + dx , y: a.y + dy };  
+}
+
+Engine2D.engine.LineToLineTestV4 = function(lineA,lineB){
+	var a = {x:lineA[0],y:lineA[1]};
+	var b = {x:lineA[2],y:lineA[3]};
+	var c = {x:lineB[0],y:lineB[1]};
+	var d = {x:lineB[2],y:lineB[3]};
+	return Engine2D.engine.LineToLineTestV3(a,b,c,d);
 }
 
 //圆与线段碰撞检测
@@ -1244,4 +1321,4 @@ Array.prototype.remove=function(dx) {
 	}
 	
 	this.length -= 1 
-} 
+}

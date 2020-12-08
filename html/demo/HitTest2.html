@@ -70,9 +70,9 @@
 	  	 testSpirit.name = "agent"+i;
 	  	 testSpirit.spiritType = 0;
 	  	 testSpirit.substanceType = 1;
-	  	 testSpirit.orgType = 1;
-	  	 testSpirit.width = 5;
-	  	 testSpirit.height = 5;
+	  	 testSpirit.orgType = 0;
+	  	 testSpirit.width = 30;
+	  	 testSpirit.height = 100;
 	  	 testSpirit.rotate = 360 * Math.random();
 	  	 testSpirit.x = 800 * Math.random();
 	  	 testSpirit.y = 800 * Math.random();
@@ -100,9 +100,9 @@
 	  	 testAreaSpirit.substanceType = 1;
 	  	 testAreaSpirit.isFollowParent = 0;
 	  	 testAreaSpirit.width = 20;
-	  	 testSpirit.height = 20;
+	  	 testAreaSpirit.height = 20;
 	  	 testAreaSpirit.rotate = 0;
-	  	 testAreaSpirit.relativeRotate = -30;
+	  	 testAreaSpirit.relativeRotate = 0;
 	  	 testAreaSpirit.x = 0;
 	  	 testAreaSpirit.y = 0;
 	  	 testAreaSpirit.relativeX = 0;
@@ -140,12 +140,12 @@
 		 }
 		 
 		 testLineSpirit1.hitTest = function(hitSpirit,result){
-		 	//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+		 	console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
 		 	
-		 	Engine2D.util.drawPoint(hitSpirit,result.x,result.y,2,"#4A4AFF",1);
+		 	//console.log(Engine2D.engine.Vec2.distance2(hitSpirit.relativeX,hitSpirit.relativeY,result.point.x,result.point.y));
 		 	
-		 	//console.log(Engine2D.engine.Vec2.distance2(hitSpirit.x,hitSpirit.y,result.point.x,result.point.y));
-
+  	 	 	this.style = "#7CFC00";
+  	 	 	
   	 	 }
 		 
 		 testSpirit.addchild(testLineSpirit1);
@@ -194,12 +194,7 @@
 	 
 	 engine.mouseup = function(){
 		 
-		  //求点到圆心的距离
-		  var c = Math.pow(Math.pow(one.childs[one.name + "_testArea0"].x-engine.mouseX, 2) + Math.pow(one.childs[one.name + "_testArea0"].y-engine.mouseY, 2),0.5);
-		  //判断是否在原内
-		  if(c<=one.childs[one.name + "_testArea0"].width){
-			  one.isTake = false;
-		  }
+		 one.isTake = false;
 		 
 	 };
 	 

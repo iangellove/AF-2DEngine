@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AICar</title>
+	
+    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+    <meta http-equiv="description" content="Genetic">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+  	<script type="text/javascript" src="../2DEngine/2DEngine.v1.0.1.js"></script>
+
+	<style type="text/css">
+		
+		body{
+			margin: 0;
+			padding: 0;
+			text-align: center;
+		}
+		
+		#myCanvas{
+			margin-top: 5%;
+			border: 1px solid #D3D3D3;
+		}
+		
+		.consoleDiv{
+			width: 99%;
+			margin: 10px;
+		}
+		
+	</style>
+	
+  </head>
+  	
+  <body>
+   	
+   	<canvas id="myCanvas" width="1600px" height="1000px"></canvas>
+   	
+   	<br/>
+   	
+   	<div class="consoleDiv">
+	   	
+	   	load map:
+	   	<input type="file" onchange="showDataByBinaryString()" name="jsonFile" id="jsonFile" multiple="multiple"/>
+    	<button onclick="showDataByBinaryString()">load</button>
+	   	
+   	</div>
+   	
+  </body>
+  
+  <script type="text/javascript">
+  	 
+  	 var rotateSpeed = 5;
+  	 
+  	 var forwardSpeed = 3;
+  	 
+  	 var viewWidth = 160;
+  	 
+  	 var maps = {};
+  	 
+  	 var cars = {};
+  	 
+  	 var canvas = document.getElementById('myCanvas');
+  	 
+  	 var engine = Engine2D.method.getInstance();
+  	 
+  	 engine.init(canvas);
+  	 
+  	 var startScene = new Engine2D.scene();
+  	 startScene.name = "startScene";
+  	 startScene.fps = 60;
+  	 startScene.hitTest = true;
+
+  	 startScene.update = function(){
+  	 	engine.clear();
+  	 	clearCarsView();
+  	 }
+  	 
+  	 engine.addScene(startScene);
+  	 
+  	 var testLayer = new Engine2D.layer();
+  	 testLayer.name = "testLayer";
+  	 
+  	 testLayer.update = function(){
+  		//收集car状态信息
+  		//console.log(cars);
+  	 }
+  	 
+  	 startScene.addLayer(testLayer);
+
+  	 engine.runScene("startScene");
+  	 
+  	 function clearCarsView(){
+
+  		 for(var key in cars){
+  			 if(cars[key].survival){
+  				cars[key].x1 = viewWidth;
+  	  			cars[key].x2 = viewWidth;
+  	  			cars[key].x3 = viewWidth;
+  	  			cars[key].x4 = viewWidth;
+  			 }
+  		 }
+  		 
+  	 }
+  	 
+  	 function createAgent(startPoint){
+  		 
+  		/**
+  	  	 * 创建移动精灵
+  	  	 **/
+  	  	 for(var i = 0;i<10;i++){
+  	  	 	
+  	  		 var x = 800 * Math.random();
+  	  		 var y = 800 * Math.random();
+  	  	     var rotate = 360 * Math.random();
+  	  		 
+  	  	     if(startPoint!=null){
+  	  	    	 x = startPoint.x;
+  	  	    	 y = startPoint.y;
+  	  	    	 rotate = 90;
+  	  	     }
+  	  	     
+  		  	 var testSpirit = new Engine2D.spirit();
+  		  	 testSpirit.name = "agent"+i;
+  		  	 testSpirit.spiritType = 0;
+  		  	 testSpirit.substanceType = 1;
+  		  	 testSpirit.orgType = 0;
+  		  	 testSpirit.width = 38;
+  		  	 testSpirit.height = 28;
+  		  	 testSpirit.rotate = rotate;
+  		  	 testSpirit.x = x;
+  		  	 testSpirit.y = y;
+  		  	 testSpirit.style = "#7CFC00";
+  		  	 
+  	  	 	 testSpirit.update = function(){
+
+  	  	 		if(cars[this.name].survival){
+  	  	 			
+  	  	 			cars[this.name].survivalTime++;
+  	  	 			
+  	  	  	 	 	var random = Math.random();
+  	  	  	 	 	
+  	  	  	 	 	if(random<0.5){
+  	  	  	 	 		Engine2D.action.rotate(this,-rotateSpeed);
+  	  	  	 	 	}else{
+  	  	  	 	 		Engine2D.action.rotate(this,rotateSpeed);
+  	  	  	 	 	}
+  	  	  	 	 	
+  	  	  	 		Engine2D.action.forward(this,forwardSpeed,true);
+  	  	  	 	
+  	  	 		}
+  	  	 		
+  	  	 	 }
+  	  	 	 
+  	  	 	 testSpirit.hitTest = function(hitSpirit,result){
+  	  	 	 	//if(hitSpirit.name.indexOf("_testLine")<0){
+  	  	 	 		//hitSpirit.scene.removeChilds(hitSpirit.name);
+  	  	 	 	//}
+  	  	 		if(hitSpirit.name!="wallstart" && hitSpirit.name.indexOf("agent")<0 && hitSpirit.name.indexOf("testLine")<0){
+					//console.log(testSpirit.name);
+	 	 			cars[this.name].survival = false;
+	 	 			//console.log(cars);
+	 	 		}
+  	  	 	 }
+  	  	 	 
+  	  	 	 var onceCar = {};
+  	  	     onceCar.name = testSpirit.name;
+  	  	 	 onceCar.x1 = 0;
+  	  	     onceCar.x2 = 0;
+  	  	 	 onceCar.x3 = 0;
+  	  		 onceCar.x4 = 0;
+  	  		 onceCar.survivalTime = 0;
+  	  	 	 onceCar.survival = true;
+			 
+  	  	 	 cars[testSpirit.name] = onceCar;
+  	  	 	 
+  		  	 testLayer.addSpirit(testSpirit);
+  			 
+  			 var testLineSpirit1 = new Engine2D.spirit();
+  		  	 testLineSpirit1.name = testSpirit.name + "_testLine1";
+  		  	 testLineSpirit1.spiritType = 0;
+  		  	 testLineSpirit1.orgType = 2;
+  		  	 testLineSpirit1.substanceType = 1;
+  		  	 testLineSpirit1.isFollowParent = 0;
+  		  	 testLineSpirit1.width = viewWidth;
+  		  	 testLineSpirit1.rotate = 0;
+  		  	 testLineSpirit1.relativeRotate = -30;
+  		  	 testLineSpirit1.x = 0;
+  		  	 testLineSpirit1.y = 0;
+  		  	 testLineSpirit1.relativeX = 0;
+  		  	 testLineSpirit1.relativeY = 0;
+  		  	 testLineSpirit1.style = "#EE3B3B";
+  			 
+  			 testLineSpirit1.update = function(){
+  			 	//this.style = "#EE3B3B";
+  			 }
+  			 
+  			 testLineSpirit1.hitTest = function(hitSpirit,result){
+  	  	 	 	if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
+  	  	 	 		var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
+	  	 	 		if(cars[this.parent.name].x1 > dis){
+	  	 	 			cars[this.parent.name].x1 = dis;
+	  	 	 		}
+  	  	 	 	}
+  	  	 	 }
+  	  	 	 
+  	  	 	 var testLineSpirit2 = new Engine2D.spirit();
+  		  	 testLineSpirit2.name = testSpirit.name + "_testLine2";
+  		  	 testLineSpirit2.spiritType = 0;
+  		  	 testLineSpirit2.orgType = 2;
+  		  	 testLineSpirit2.substanceType = 1;
+  		  	 testLineSpirit2.isFollowParent = 0;
+  		  	 testLineSpirit2.width = viewWidth;
+  		  	 testLineSpirit2.rotate = 0;
+  		  	 testLineSpirit2.relativeRotate = -10;
+  		  	 testLineSpirit2.x = 0;
+  		  	 testLineSpirit2.y = 0;
+  		  	 testLineSpirit2.relativeX = 0;
+  		  	 testLineSpirit2.relativeY = 0;
+  		  	 testLineSpirit2.style = "#EE3B3B";
+  			 
+  			 testLineSpirit2.update = function(){
+  			 	//this.style = "#EE3B3B";
+  			 }
+  			 
+  			 testLineSpirit2.hitTest = function(hitSpirit,result){
+  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
+  	  	 	 		var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
+  	  	 	 		if(cars[this.parent.name].x2 > dis){
+  	  	 	 			cars[this.parent.name].x2 = dis;
+  	  	 	 		}
+  	  	 	 		
+  	  	 	 	}
+  	  	 	 }
+  	  	 	 
+  	  	 	 var testLineSpirit3 = new Engine2D.spirit();
+  		  	 testLineSpirit3.name = testSpirit.name + "_testLine3";
+  		  	 testLineSpirit3.spiritType = 0;
+  		  	 testLineSpirit3.orgType = 2;
+  		  	 testLineSpirit3.substanceType = 1;
+  		  	 testLineSpirit3.isFollowParent = 0;
+  		  	 testLineSpirit3.width = viewWidth;
+  		  	 testLineSpirit3.rotate = 0;
+  		  	 testLineSpirit3.relativeRotate = 10;
+  		  	 testLineSpirit3.x = 0;
+  		  	 testLineSpirit3.y = 0;
+  		  	 testLineSpirit3.relativeX = 0;
+  		  	 testLineSpirit3.relativeY = 0;
+  		  	 testLineSpirit3.style = "#EE3B3B";
+  			 
+  			 testLineSpirit3.update = function(){
+  			 	//this.style = "#EE3B3B";
+  			 }
+  			 
+  			 testLineSpirit3.hitTest = function(hitSpirit,result){
+  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
+  					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
+  	  	 	 		if(cars[this.parent.name].x3 > dis){
+  	  	 	 			cars[this.parent.name].x3 = dis;
+  	  	 	 		}
+  	  	 	 	}
+  	  	 	 }
+  			
+  			 var testLineSpirit4 = new Engine2D.spirit();
+  		  	 testLineSpirit4.name = testSpirit.name + "_testLine4";
+  		  	 testLineSpirit4.spiritType = 0;
+  		  	 testLineSpirit4.orgType = 2;
+  		  	 testLineSpirit4.substanceType = 1;
+  		  	 testLineSpirit4.isFollowParent = 0;
+  		  	 testLineSpirit4.width = viewWidth;
+  		  	 testLineSpirit4.rotate = 0;
+  		  	 testLineSpirit4.relativeRotate = 30;
+  		  	 testLineSpirit4.x = 0;
+  		  	 testLineSpirit4.y = 0;
+  		  	 testLineSpirit4.relativeX = 0;
+  		  	 testLineSpirit4.relativeY = 0;
+  		  	 testLineSpirit4.style = "#EE3B3B";
+  			 
+  			 testLineSpirit4.update = function(){
+  			 	//this.style = "#EE3B3B";
+  			 }
+  			 
+  			 testLineSpirit4.hitTest = function(hitSpirit,result){
+  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
+  					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
+  	  	 	 		if(cars[this.parent.name].x4 > dis){
+  	  	 	 			cars[this.parent.name].x4 = dis;
+  	  	 	 		}
+  	  	 	 	}
+  	  	 	 }
+
+  	  	 	 testSpirit.addchild(testLineSpirit1);
+  	  	 	 testSpirit.addchild(testLineSpirit2);
+  	  	 	 testSpirit.addchild(testLineSpirit3);
+  	  	 	 testSpirit.addchild(testLineSpirit4);
+  	  	 }
+  		 
+  	 }
+  	 
+  	function showDataByBinaryString() {
+      var resultFile = document.getElementById("jsonFile").files[0];
+      if (resultFile) {
+          var reader = new FileReader();
+          //异步方式
+			reader.onload = function(e) {
+              var urlData = this.result;
+              
+              var jsonObject = null;
+              
+              if(urlData!=null){
+            	  jsonObject = JSON.parse(urlData);
+              }
+              console.log(jsonObject);
+              loadMap(jsonObject);
+          };
+          reader.readAsBinaryString(resultFile);                
+      }
+  	}
+  	
+  	function loadMap(mapData){
+  		
+  		for(var key in mapData){
+  			
+  			addWallFromMap(mapData[key]);
+  			
+  		}
+  		
+  		createAgent(mapData["wallstart"]);
+  		
+  	}
+  	
+  	 //添加墙
+ 	 function addWallFromMap(wall){
+ 		 
+ 		 var wallSpirit = new Engine2D.spirit();
+	  	 wallSpirit.name = wall.name;
+	  	 console.log(wall.spiritType,wall.substanceType,wall.orgType);
+	  	 wallSpirit.spiritType = wall.spiritType;
+	  	 wallSpirit.substanceType = wall.substanceType;
+	  	 wallSpirit.orgType = wall.orgType;
+	  	 wallSpirit.width = wall.width;
+	  	 wallSpirit.height = wall.height;
+	  	 wallSpirit.rotate = wall.rotate;
+	  	 wallSpirit.x = wall.x;
+	  	 wallSpirit.y = wall.y;
+	  	 wallSpirit.style = wall.style;
+	  	 
+	 	 wallSpirit.update = function(){
+	 		
+	 	 }
+	 	 
+	 	 wallSpirit.hitTest = function(hitSpirit,result){
+	 	 	
+	 	 	//console.log("in:"+hitSpirit.name);
+	 	 	//console.log("in:"+this.name);
+	 	 	
+	 	 	//if(wallSpirit.name!="wallstart" && hitSpirit.name.indexOf("agent")>=0 && hitSpirit.name.indexOf("testLine")<0){
+	 	 		//console.log(hitSpirit.name);
+	 	 		//cars[hitSpirit.name].survival = false;
+	  	 	 	//Engine2D.action.back(hitSpirit, forwardSpeed, true);
+	 	 	//}
+	 	 	
+	 	 	//Engine2D.action.stop(hitSpirit);
+	 	 }
+		 
+	 	 maps[wall.name] = wall;
+	 	 
+	  	 testLayer.addSpirit(wallSpirit);
+ 		 
+ 	 }
+  	
+  </script>
+   
+</html>

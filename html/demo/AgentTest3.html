@@ -33,9 +33,9 @@
   
   <script type="text/javascript">
   	 
-  	 var rotateSpeed = 1;
+  	 var rotateSpeed = 2;
   	 
-  	 var forwardSpeed = 3;
+  	 var forwardSpeed = 5;
   	 
   	 var canvas = document.getElementById('myCanvas');
   	 
@@ -61,14 +61,14 @@
   	 /**
   	 * 创建移动精灵
   	 **/
-  	 for(var i = 0;i<2;i++){
+  	 for(var i = 0;i<3;i++){
   	 	
 	  	 var testSpirit = new Engine2D.spirit();
 	  	 testSpirit.name = "agent"+i;
 	  	 testSpirit.spiritType = 0;
 	  	 testSpirit.substanceType = 1;
-	  	 testSpirit.orgType = 1;
-	  	 testSpirit.width = 20;
+	  	 testSpirit.orgType = 0;
+	  	 testSpirit.width = 30;
 	  	 testSpirit.height = 20;
 	  	 testSpirit.rotate = 360 * Math.random();
 	  	 testSpirit.x = 800 * Math.random();
@@ -90,38 +90,13 @@
   	 	 }
   	 	 
   	 	 testSpirit.hitTest = function(hitSpirit){
-  	 	 	if(hitSpirit.name.indexOf("_testLine")<0){
+  	 	 	//if(hitSpirit.name.indexOf("_testLine")<0){
   	 	 		//hitSpirit.scene.removeChilds(hitSpirit.name);
-  	 	 	}
+  	 	 	//}
   	 	 }
 
 	  	 testLayer.addSpirit(testSpirit);
 		 
-	  	 var testAreaSpirit = new Engine2D.spirit();
-	  	 testAreaSpirit.name = testSpirit.name + "_testArea";
-	  	 testAreaSpirit.spiritType = 0;
-	  	 testAreaSpirit.orgType = 1;
-	  	 testAreaSpirit.substanceType = 0;
-	  	 testAreaSpirit.isFollowParent = 0;
-	  	 testAreaSpirit.width = 30;
-	  	 testSpirit.height = 30;
-	  	 testAreaSpirit.rotate = 0;
-	  	 testAreaSpirit.relativeRotate = -30;
-	  	 testAreaSpirit.x = 0;
-	  	 testAreaSpirit.y = 0;
-	  	 testAreaSpirit.relativeX = 0;
-	  	 testAreaSpirit.relativeY = 0;
-	  	 testAreaSpirit.style = "#EE3B3B";
-	  	 testAreaSpirit.alpha = 0.3;
-		 
-		 testAreaSpirit.update = function(){
-		 	this.style = "#EE3B3B";
-		 }
-		 
-		 testAreaSpirit.hitTest = function(hitSpirit){
-		 	
-  	 	 }
-		
 		 var testLineSpirit1 = new Engine2D.spirit();
 	  	 testLineSpirit1.name = testSpirit.name + "_testLine1";
 	  	 testLineSpirit1.spiritType = 0;
@@ -205,7 +180,7 @@
 	  	 testLineSpirit4.isFollowParent = 0;
 	  	 testLineSpirit4.width = 100;
 	  	 testLineSpirit4.rotate = 0;
-	  	 testLineSpirit4.relativeRotate = 10;
+	  	 testLineSpirit4.relativeRotate = 30;
 	  	 testLineSpirit4.x = 0;
 	  	 testLineSpirit4.y = 0;
 	  	 testLineSpirit4.relativeX = 0;
@@ -220,8 +195,7 @@
 		 	console.log(this.name+"===>hit:"+hitSpirit.name);
   	 	 	this.style = "#7CFC00";
   	 	 }
-		
-  	 	 //testSpirit.addchild(testAreaSpirit);
+
   	 	 testSpirit.addchild(testLineSpirit1);
   	 	 testSpirit.addchild(testLineSpirit2);
   	 	 testSpirit.addchild(testLineSpirit3);
@@ -253,7 +227,10 @@
   	 	 	//console.log("in:"+hitSpirit.name);
   	 	 	//console.log("in:"+this.name);
   	 	 	
-  	 	 	Engine2D.action.back(hitSpirit, forwardSpeed, true);
+  	 	 	if(hitSpirit.name.indexOf("wall")<0){
+  	  	 	 	Engine2D.action.back(hitSpirit, forwardSpeed, true);
+  	 	 	}
+  	 	 	
   	 	 	//Engine2D.action.stop(hitSpirit);
   	 	 }
 

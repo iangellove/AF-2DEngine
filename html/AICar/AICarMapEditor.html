@@ -7,7 +7,7 @@
     <meta http-equiv="description" content="Genetic">
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
-  	<script type="text/javascript" src="../js/2DEngine.v1.0.1.js"></script>
+  	<script type="text/javascript" src="../2DEngine/2DEngine.v1.0.1.js"></script>
 
 	<style type="text/css">
 		
@@ -60,6 +60,8 @@
 	   	height:<input id="heightEdit" type="text" value="0"/>
 	   	
 	   	rotate:<input id="rotateEdit" type="text" value="0"/>
+	   	
+	   	color:<input id="colorEdit" type="text" value=""/>
 	   	
 	   	<button id="edit" onclick="editWall()">edit</button>
    		
@@ -364,6 +366,7 @@
   		document.getElementById('rotateEdit').value = spirit.rotate;
   		document.getElementById('x').value = spirit.x;
   		document.getElementById('y').value = spirit.y;
+  		document.getElementById('colorEdit').value = spirit.style;
   	 }
   	 
   	function editWall(){
@@ -371,9 +374,13 @@
   		var width = document.getElementById('widthEdit').value;
   		var height = document.getElementById('heightEdit').value;
   		var rotate = document.getElementById('rotateEdit').value;
+  		var style = document.getElementById('colorEdit').value;
   		walls[name].width = width * 1;
   		walls[name].height = height * 1;
   		walls[name].rotate = rotate * 1;
+  		if(style!=null){
+  			walls[name].style = style;
+  		}
   	}
   	
   	function saveMapJson(){
@@ -517,8 +524,6 @@
 		
 		 wallSpirit.addchild(testAreaSpirit);
 	  	 
-		 console.log(wallSpirit);
-		 
  	 }
   	
   </script>
