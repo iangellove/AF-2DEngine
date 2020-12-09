@@ -16,7 +16,7 @@ AF_AI.genetic.instance = function(){
 	this.populationCount = 0,
 	this.chromosomeCount = 0;
 	this.crossoverRate = 0.7;
-	this.mutationRate = 0.01;
+	this.mutationRate = 0.05;
 	this.population = null;
 	
 	this.init = function(){
@@ -27,9 +27,7 @@ AF_AI.genetic.instance = function(){
 		return this.population.run();
 	}
 	
-	this.calculateFitnessFunction = function(x){
-		return x;
-	}
+	this.calculateFitnessFunction = null;
 	
 }
 
@@ -38,6 +36,7 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 	this.instance = instance;
 	this.bestFitness = 0.0;
 	this.bestChromosome = null;
+	this.bestIndex = 0;
 	this.totalFitness = 0.0;
 	this.chromosomes = {};
 	this.candidate = null;
@@ -49,9 +48,9 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 		
 		for(var i = 0;i<this.count;i++){
 			var chromData = this.populationData[i];
-			console.log("chromData",chromData);
-			this.chromosomes[i] = AF_AI.genetic.chromosome(i,this.cCount,chromData);
-			this.chromosomes[i].fitness = this.instance.calculateFitnessFunction(chromData);
+			this.chromosomes[i] = new AF_AI.genetic.chromosome(i,cCount,chromData);
+			this.chromosomes[i].fitness = this.instance.calculateFitnessFunction(i);
+			
 		}
 		
 	}
@@ -73,10 +72,11 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 		
 		//select candidate chromosome
 		for(var i = 0;i<this.count;i++){
-
+			
 			var r = Math.random();
 			for(var j = 0;j<this.count;j++){
 				if(r <= this.chromosomes[j].totalProbability){
+					
 					this.candidate[i] = this.chromosomes[j].codes;
 					break;
 				}
@@ -84,7 +84,6 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 
 		}
 		
-		//console.log(this.candidate[0]);
 	}
 	
 	/**
@@ -96,15 +95,15 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 			
 			if(Math.random() <= this.instance.crossoverRate){
 
-				var index = AF_AI.utils.randomNotEqInt(this.count,i);  //get corss index
+				var index = AF_AI.utils.randomNotEqInt(this.count,i) - 1;  //get corss index
 
-				var positlion = AF_AI.utils.randomInt(this.cCount);  //get corss positlion
+				var positlion = AF_AI.utils.randomInt(cCount);  //get corss positlion
 				
-				var temp = this.candidate[i].codes[positlion];
+				var temp = this.candidate[i][positlion];
 				
-				this.candidate[i].codes[positlion] = this.candidate[index].codes[positlion]; 
+				this.candidate[i][positlion] = this.candidate[index][positlion]; 
 				
-				this.candidate[index].codes[positlion] = temp;
+				this.candidate[index][positlion] = temp;
 				
 			}
 
@@ -121,9 +120,11 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 			
 			if(Math.random() <= this.instance.mutationRate){
 				
-				var positlion = AF_AI.utils.randomInt(this.cCount);  //get mutation positlion
+				var positlion = AF_AI.utils.randomInt(cCount);  //get mutation positlion
 				
 				this.candidate[i][positlion] = AF_AI.utils.getNumberInND(0,1);
+
+//				console.log(positlion,this.candidate[i][positlion]);
 				
 			}
 
@@ -140,6 +141,9 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 		this.totalFitness = calculateFitness.totalFitness;
 		this.bestFitness = calculateFitness.bestFitness;
 		this.bestChromosome = this.chromosomes[calculateFitness.index];
+		this.bestIndex = calculateFitness.index;
+		
+		console.log(calculateFitness);
 		
 		this.select();
 		
@@ -168,9 +172,9 @@ AF_AI.genetic.chromosome = function(index,cCount,chromData){
 	this.totalProbability = 0.0;
 	
 	if(this.codeType == 0){
-		this.codes = chromData.data;
+		this.codes = chromData;
 	}else{
-		this.codes = AF_AI.genetic.decode(chromData.data);
+		this.codes = AF_AI.genetic.decode(chromData);
 	}
 	
 }
@@ -180,12 +184,15 @@ AF_AI.genetic.calculateFitness = function(chromosomes){
 	var index = 0;
 	var totalFitness = 0.0;
 	for(var key in chromosomes){
-		totalFitness += this.chromosomes[key].fitness * 1;
-		if(current < this.chromosomes[key].fitness * 1){
-			current = this.chromosomes[key].fitness;
+		
+		totalFitness += chromosomes[key].fitness * 1;
+		
+		if(current < chromosomes[key].fitness * 1){
+			current = chromosomes[key].fitness;
 			index = key
 		}
 	}
+
 	return {totalFitness:totalFitness,index:index,fitness:current};
 }
 
@@ -223,7 +230,7 @@ AF_AI.network.instance = function(){
 	this.update = function(params){
 
 		var cli = 0;
-		console.log("params",params);
+		//console.log("params",params);
 		for(var i = 0;i<this.layers.length;i++){
 			
 			/**
@@ -245,13 +252,54 @@ AF_AI.network.instance = function(){
 					}
 				}
 				
-				for(var x = 0;x<this.layers[i].inputNum;x++){
+				for(var x = 0;x<this.layers[i].outputNum;x++){
 					bias[x] = params.b[startBIndex + x];
 				}
-				
+				//console.log(bias);
 				this.layers[i].update(weight,bias);
 				
 				cli++;
+			}
+			
+		}
+		
+	}
+	
+	this.updateV2 = function(params){
+
+		var index = 0;
+		
+		//console.log("params",params);
+		for(var i = 0;i<this.layers.length;i++){
+			
+			/**
+			 * 跳过输入层
+			 */
+			if(this.layers[i].layerType != 0){
+
+				var weight = AF_AI.utils.zero2d(this.layers[i].inputNum,this.layers[i].outputNum);
+				
+				var bias = AF_AI.utils.zero(this.layers[i].outputNum);
+
+				//console.log("start——index",index);
+				
+				for(var x = 0;x<this.layers[i].inputNum;x++){
+					for(var y = 0;y<this.layers[i].outputNum;y++){
+						
+						weight[x][y] = params.data[index];
+						index++;
+					}
+				}
+				
+				for(var x = 0;x<this.layers[i].outputNum;x++){
+					
+					bias[x] = params.data[index];
+					index++;
+				}
+				//console.log(bias);
+				this.layers[i].update(weight,bias);
+				
+				//console.log("end——index",index);
 			}
 			
 		}
@@ -271,11 +319,33 @@ AF_AI.network.instance = function(){
 				for(var j = 0;j<currentW.length;j++){
 					params.w.push(currentW[j]);
 				}
-				
 				for(var j = 0;j<currentB.length;j++){
 					params.b.push(currentB[j]);
 				}
+				//console.log(params.b);
+			}
+			
+		}
+		
+		return params;
+	}
+	
+	this.getParamsV2 = function(){
+		var params = new Array();
+		
+		for(var i = 0;i<this.layers.length;i++){
+			
+			if(this.layers[i].layerType != 0){
+
+				var currentW = AF_AI.utils.matrix2dToArray(this.layers[i].weight);
+				var currentB = this.layers[i].bias;
 				
+				for(var j = 0;j<currentW.length;j++){
+					params.push(currentW[j]);
+				}
+				for(var j = 0;j<currentB.length;j++){
+					params.push(currentB[j]);
+				}
 			}
 			
 		}
@@ -307,7 +377,6 @@ AF_AI.network.layer = function(){
 	this.init = function(){
 		if(this.layerType != 0){
 			this.weight = AF_AI.utils.matrix2d(this.inputNum,this.outputNum);
-			//console.log(this.weight);
 			this.bias = AF_AI.utils.matrix(this.outputNum);
 		}
 	}
@@ -316,14 +385,12 @@ AF_AI.network.layer = function(){
 
 		this.input = input;
 		
-		//console.log(this.name,this.input);
-		
 		if(this.layerType == 0){
 			this.output = this.input;
 		}else{
-			//console.log(this.outputNum);
+	
 			this.output = AF_AI.utils.zero(this.outputNum);
-			//console.log(this.output);
+		
 			for(var o = 0;o<this.outputNum;o++){
 				for(var i = 0;i<this.inputNum;i++){
 					this.output[o] = this.output[o] * 1 + this.input[i] * this.weight[i][o];

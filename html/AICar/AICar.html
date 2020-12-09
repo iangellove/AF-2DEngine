@@ -50,13 +50,13 @@
   
   <script type="text/javascript">
   	 
-  	 var rotateSpeed = 3.5;
+  	 var rotateSpeed = 4;
   	 
-  	 var forwardSpeed = 8;
+  	 var forwardSpeed = 10;
   	 
-  	 var viewWidth = 200;
+  	 var viewWidth = 180;
   	 
-  	 var carCount = 10;
+  	 var carCount = 20;
   	 
   	 var age = 0;
   	 
@@ -64,9 +64,7 @@
   	 
   	 var cars = {};
   	 
-  	 var wTrainer = null;
-  	 
-  	 var bTrainer = null;
+  	 var trainer = null;
   	 
   	 var canvas = document.getElementById('myCanvas');
   	 
@@ -118,36 +116,28 @@
   				return;
   			 }
   		 }
-		 
-  		 console.log("in new age.");
+
+  		 console.log("in new age.",age);
   		 
-		 var wChroms = new Array();
-		 var bChroms = new Array(); 
+  		 var params =  new Array();
 		 
 		 //更新ai
 		 for(var key in cars){
-			var params = cars[key].ai.getParams();
-			wChroms.push(params.w);
-			bChroms.push(params.b);
+			params.push(cars[key].ai.getParamsV2());
 	 	 }
 
-		 //console.log("startw",wChroms);
+		 //console.log("start",params);
 		 
-		 //console.log("startb",bChroms);
-		 
-		 wChroms = wTrainer.run(wChroms);
+		 params = trainer.run(params);
 	  	 
-		 bChroms = bTrainer.run(bChroms);
-		
-		 console.log("endW",wChroms);
-		 
-		 console.log("endB",bChroms);
+		 //console.log("end",params);
 		 
 		 var index = 0;
 		 for(var key in cars){
-			var params = {w:wChroms[index],b:bChroms[index],fitness:cars[key].survivalTime};
-			cars[key].ai.update(params);
+			var param = {data:params[index],fitness:cars[key].survivalTime};
+			cars[key].ai.updateV2(param);
 			cars[key].survival = true;
+			cars[key].survivalTime = 0;
 			index++;
 		 }
 		
@@ -155,7 +145,7 @@
 		 resetAgent(maps["wallstart"]);
 		 
 		 age++;
-
+		//console.log("======================");
   	 }
   	 
   	 function init(){
@@ -163,10 +153,8 @@
 		//创建cars
    		createAgent(maps["wallstart"]);
   		//创建weight训练器
-  		wTrainer = createAITrainer(carCount,100);
-  	  	//创建bias训练器
-  	  	bTrainer = createAITrainer(carCount,21);
-		
+  		trainer = createAITrainer(carCount,121);
+		//启动
   	  	play();
   	 }
   	 
@@ -182,9 +170,9 @@
   		 trainer.populationCount = populationCount;
   		 trainer.chromosomeCount = chromosomeCount;
   		 trainer.crossoverRate = 0.7;
-  		 trainer.mutationRate = 0.01;
+  		 trainer.mutationRate = 0.3;
   		 trainer.calculateFitnessFunction = function(x){
-  			 return x.survivalTime;
+  			 return cars["agent"+x].survivalTime;
   		 }
   		 trainer.init();
   		 return trainer;
@@ -198,14 +186,14 @@
   		 var inputLayer = new AF_AI.network.layer();
   		 inputLayer.layerType = 0;
   		 inputLayer.name = "inputLayer";
-  		 inputLayer.inputNum = 4;
-  		 inputLayer.outputNum = 4;
+  		 inputLayer.inputNum = 5;
+  		 inputLayer.outputNum = 5;
   		 inputLayer.activeType = null;
   		 
   		 var fullyLayer1 = new AF_AI.network.layer();
   		 fullyLayer1.layerType = 1;
   		 fullyLayer1.name = "fullyLayer1";
-  		 fullyLayer1.inputNum = 4;
+  		 fullyLayer1.inputNum = 5;
   		 fullyLayer1.outputNum = 20;
   		 fullyLayer1.activeType = 0;
   		 
@@ -253,6 +241,7 @@
   		agent.x2 = viewWidth;
   		agent.x3 = viewWidth;
   		agent.x4 = viewWidth;
+  		agent.x5 = viewWidth;
   		agent.survivalTime = 0;
   		agent.survival = true;
   		agent.ai = createNN();
@@ -296,7 +285,7 @@
   	  	 			
   	  	 			if(cars[this.name].survivalTime > 1){
 
-  	  	  	 			var carInput = [cars[this.name].x1/viewWidth,cars[this.name].x2/viewWidth,cars[this.name].x3/viewWidth,cars[this.name].x4/viewWidth];
+  	  	  	 			var carInput = [cars[this.name].x1/viewWidth,cars[this.name].x2/viewWidth,cars[this.name].x3/viewWidth,cars[this.name].x4/viewWidth,cars[this.name].x5/viewWidth];
   	  	  	 			//console.log(carInput);
   	  	  	  	 	 	var random = cars[this.name].ai.forword(carInput);
   	  	  	  	 	 	//console.log(this.name,random);
@@ -318,10 +307,12 @@
   	  	 	 	//if(hitSpirit.name.indexOf("_testLine")<0){
   	  	 	 		//hitSpirit.scene.removeChilds(hitSpirit.name);
   	  	 	 	//}
-  	  	 		if(hitSpirit.name!="wallstart" && hitSpirit.name.indexOf("agent")<0 && hitSpirit.name.indexOf("testLine")<0){
+  	  	 		if(cars[this.name].survival && hitSpirit.name!="wallstart" && hitSpirit.name != "wallwin" && hitSpirit.name.indexOf("agent")<0 && hitSpirit.name.indexOf("testLine")<0){
 					//console.log(testSpirit.name);
 	 	 			cars[this.name].survival = false;
-	 	 			//console.log(cars);
+	 	 		}else if(cars[this.name].survival && hitSpirit.name == "wallwin"){
+	 	 			cars[this.name].survivalTime += 1000;
+	 	 			cars[this.name].survival = false;
 	 	 		}
   	  	 	 }
 
@@ -337,7 +328,7 @@
   		  	 testLineSpirit1.isFollowParent = 0;
   		  	 testLineSpirit1.width = viewWidth;
   		  	 testLineSpirit1.rotate = 0;
-  		  	 testLineSpirit1.relativeRotate = -30;
+  		  	 testLineSpirit1.relativeRotate = -45;
   		  	 testLineSpirit1.x = 0;
   		  	 testLineSpirit1.y = 0;
   		  	 testLineSpirit1.relativeX = 0;
@@ -349,7 +340,7 @@
   			 }
   			 
   			 testLineSpirit1.hitTest = function(hitSpirit,result){
-  	  	 	 	if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  	  	 	 	if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
   	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
   	  	 	 		var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
@@ -367,7 +358,7 @@
   		  	 testLineSpirit2.isFollowParent = 0;
   		  	 testLineSpirit2.width = viewWidth;
   		  	 testLineSpirit2.rotate = 0;
-  		  	 testLineSpirit2.relativeRotate = -10;
+  		  	 testLineSpirit2.relativeRotate = -20;
   		  	 testLineSpirit2.x = 0;
   		  	 testLineSpirit2.y = 0;
   		  	 testLineSpirit2.relativeX = 0;
@@ -379,7 +370,7 @@
   			 }
   			 
   			 testLineSpirit2.hitTest = function(hitSpirit,result){
-  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
   	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
   	  	 	 		var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
@@ -398,7 +389,7 @@
   		  	 testLineSpirit3.isFollowParent = 0;
   		  	 testLineSpirit3.width = viewWidth;
   		  	 testLineSpirit3.rotate = 0;
-  		  	 testLineSpirit3.relativeRotate = 10;
+  		  	 testLineSpirit3.relativeRotate = 20;
   		  	 testLineSpirit3.x = 0;
   		  	 testLineSpirit3.y = 0;
   		  	 testLineSpirit3.relativeX = 0;
@@ -410,7 +401,7 @@
   			 }
   			 
   			 testLineSpirit3.hitTest = function(hitSpirit,result){
-  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
   	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
   					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
@@ -428,7 +419,7 @@
   		  	 testLineSpirit4.isFollowParent = 0;
   		  	 testLineSpirit4.width = viewWidth;
   		  	 testLineSpirit4.rotate = 0;
-  		  	 testLineSpirit4.relativeRotate = 30;
+  		  	 testLineSpirit4.relativeRotate = 45;
   		  	 testLineSpirit4.x = 0;
   		  	 testLineSpirit4.y = 0;
   		  	 testLineSpirit4.relativeX = 0;
@@ -440,7 +431,7 @@
   			 }
   			 
   			 testLineSpirit4.hitTest = function(hitSpirit,result){
-  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart"){
+  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
   	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
   					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
@@ -449,11 +440,42 @@
   	  	 	 		}
   	  	 	 	}
   	  	 	 }
+  			 
+  			 var testLineSpirit5 = new Engine2D.spirit();
+ 		  	 testLineSpirit5.name = testSpirit.name + "_testLine5";
+ 		  	 testLineSpirit5.spiritType = 0;
+ 		  	 testLineSpirit5.orgType = 2;
+ 		  	 testLineSpirit5.substanceType = 1;
+ 		  	 testLineSpirit5.isFollowParent = 0;
+ 		  	 testLineSpirit5.width = viewWidth;
+ 		  	 testLineSpirit5.rotate = 0;
+ 		  	 testLineSpirit5.relativeRotate = 0;
+ 		  	 testLineSpirit5.x = 0;
+ 		  	 testLineSpirit5.y = 0;
+ 		  	 testLineSpirit5.relativeX = 0;
+ 		  	 testLineSpirit5.relativeY = 0;
+ 		  	 testLineSpirit5.style = "#EE3B3B";
+ 			 
+ 			 testLineSpirit5.update = function(){
+ 			 	//this.style = "#EE3B3B";
+ 			 }
+ 			 
+ 			 testLineSpirit5.hitTest = function(hitSpirit,result){
+ 				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
+ 	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+ 	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
+ 					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
+ 	  	 	 		if(cars[this.parent.name].x5 > dis){
+ 	  	 	 			cars[this.parent.name].x5 = dis;
+ 	  	 	 		}
+ 	  	 	 	}
+ 	  	 	 }
 
   	  	 	 testSpirit.addchild(testLineSpirit1);
   	  	 	 testSpirit.addchild(testLineSpirit2);
   	  	 	 testSpirit.addchild(testLineSpirit3);
   	  	 	 testSpirit.addchild(testLineSpirit4);
+  	  	 	 testSpirit.addchild(testLineSpirit5);
   	  	 }
   		 
   	 }
