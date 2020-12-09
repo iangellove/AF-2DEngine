@@ -56,9 +56,17 @@
   	 
   	 var viewWidth = 200;
   	 
+  	 var carCount = 10;
+  	 
+  	 var age = 0;
+  	 
   	 var maps = {};
   	 
   	 var cars = {};
+  	 
+  	 var wTrainer = null;
+  	 
+  	 var bTrainer = null;
   	 
   	 var canvas = document.getElementById('myCanvas');
   	 
@@ -73,6 +81,7 @@
 
   	 startScene.update = function(){
   	 	engine.clear();
+  	 	isNewAge();
   	 	clearCarsView();
   	 }
   	 
@@ -87,28 +96,120 @@
   	 }
   	 
   	 startScene.addLayer(testLayer);
+	 
+  	 function clearCarsView(){
 
-  	 engine.runScene("startScene");
+  		 for(var key in cars){
+  			 if(cars[key].survival){
+  				cars[key].x1 = viewWidth;
+  	  			cars[key].x2 = viewWidth;
+  	  			cars[key].x3 = viewWidth;
+  	  			cars[key].x4 = viewWidth;
+  			 }
+  		 }
+  		 
+  	 }
+	
+  	 function isNewAge(){
+
+  		 //判断是否全部死亡
+  		 for(var key in cars){
+  			 if(cars[key].survival){
+  				return;
+  			 }
+  		 }
+		 
+  		 console.log("in new age.");
+  		 
+		 var wChroms = new Array();
+		 var bChroms = new Array(); 
+		 
+		 //更新ai
+		 for(var key in cars){
+			var params = cars[key].ai.getParams();
+			wChroms.push(params.w);
+			bChroms.push(params.b);
+	 	 }
+
+		 //console.log("startw",wChroms);
+		 
+		 //console.log("startb",bChroms);
+		 
+		 wChroms = wTrainer.run(wChroms);
+	  	 
+		 bChroms = bTrainer.run(bChroms);
+		
+		 console.log("endW",wChroms);
+		 
+		 console.log("endB",bChroms);
+		 
+		 var index = 0;
+		 for(var key in cars){
+			var params = {w:wChroms[index],b:bChroms[index],fitness:cars[key].survivalTime};
+			cars[key].ai.update(params);
+			cars[key].survival = true;
+			index++;
+		 }
+		
+		 //还原agent
+		 resetAgent(maps["wallstart"]);
+		 
+		 age++;
+
+  	 }
+  	 
+  	 function init(){
+  		
+		//创建cars
+   		createAgent(maps["wallstart"]);
+  		//创建weight训练器
+  		wTrainer = createAITrainer(carCount,100);
+  	  	//创建bias训练器
+  	  	bTrainer = createAITrainer(carCount,21);
+		
+  	  	play();
+  	 }
+  	 
+  	 function play(){
+
+  	  	 engine.runScene("startScene");
+  	  	 
+  	 }
+  	 
+  	 //创建AI训练器
+  	 function createAITrainer(populationCount,chromosomeCount){
+  		 var trainer = new AF_AI.genetic.instance();
+  		 trainer.populationCount = populationCount;
+  		 trainer.chromosomeCount = chromosomeCount;
+  		 trainer.crossoverRate = 0.7;
+  		 trainer.mutationRate = 0.01;
+  		 trainer.calculateFitnessFunction = function(x){
+  			 return x.survivalTime;
+  		 }
+  		 trainer.init();
+  		 return trainer;
+  	 }
   	 
   	 //创建AI神经网络
-  	 function createAI(){
-  		 var nn = new NetWork.instance();
+  	 function createNN(){
+  		 //创建神经网络
+  		 var nn = new AF_AI.network.instance();
   		 
-  		 var inputLayer = new NetWork.layer();
+  		 var inputLayer = new AF_AI.network.layer();
   		 inputLayer.layerType = 0;
   		 inputLayer.name = "inputLayer";
   		 inputLayer.inputNum = 4;
   		 inputLayer.outputNum = 4;
   		 inputLayer.activeType = null;
   		 
-  		 var fullyLayer1 = new NetWork.layer();
+  		 var fullyLayer1 = new AF_AI.network.layer();
   		 fullyLayer1.layerType = 1;
   		 fullyLayer1.name = "fullyLayer1";
   		 fullyLayer1.inputNum = 4;
   		 fullyLayer1.outputNum = 20;
   		 fullyLayer1.activeType = 0;
   		 
- 		 var fullyLayer2 = new NetWork.layer();
+ 		 var fullyLayer2 = new AF_AI.network.layer();
  		 fullyLayer2.layerType = 1;
  		 fullyLayer2.name = "fullyLayer2";
  		 fullyLayer2.inputNum = 20;
@@ -124,17 +225,38 @@
   		 return nn;
   	 } 
   	 
-  	 function clearCarsView(){
-
+  	 function updateAI(){
+  		 
+  		for(var key in cars){
+  			cars[key].spirit.x = startPoint.x;
+  			cars[key].spirit.y = startPoint.y;
+  			cars[key].spirit.rotate = 90;
+  		}
+  		
+  	 }
+  	 
+  	 function resetAgent(startPoint){
+  		 
   		 for(var key in cars){
-  			 if(cars[key].survival){
-  				cars[key].x1 = viewWidth;
-  	  			cars[key].x2 = viewWidth;
-  	  			cars[key].x3 = viewWidth;
-  	  			cars[key].x4 = viewWidth;
-  			 }
+  			cars[key].spirit.x = startPoint.x;
+  			cars[key].spirit.y = startPoint.y;
+  			cars[key].spirit.rotate = 90;
   		 }
   		 
+  	 }
+  	 
+  	 function createAgentAI(spirit,viewWidth){
+  		var agent = {};
+  		agent.name = spirit.name;
+  		agent.spirit = spirit;
+  		agent.x1 = viewWidth;
+  		agent.x2 = viewWidth;
+  		agent.x3 = viewWidth;
+  		agent.x4 = viewWidth;
+  		agent.survivalTime = 0;
+  		agent.survival = true;
+  		agent.ai = createNN();
+  	 	return agent;
   	 }
   	 
   	 function createAgent(startPoint){
@@ -142,7 +264,7 @@
   		/**
   	  	 * 创建移动精灵
   	  	 **/
-  	  	 for(var i = 0;i<10;i++){
+  	  	 for(var i = 0;i<carCount;i++){
   	  	 	
   	  		 var x = 800 * Math.random();
   	  		 var y = 800 * Math.random();
@@ -177,7 +299,7 @@
   	  	  	 			var carInput = [cars[this.name].x1/viewWidth,cars[this.name].x2/viewWidth,cars[this.name].x3/viewWidth,cars[this.name].x4/viewWidth];
   	  	  	 			//console.log(carInput);
   	  	  	  	 	 	var random = cars[this.name].ai.forword(carInput);
-  	  	  	  	 	 	console.log(this.name,random);
+  	  	  	  	 	 	//console.log(this.name,random);
   	  	  	  	 	 	if(random<0.5){
   	  	  	  	 	 		Engine2D.action.rotate(this,-rotateSpeed);
   	  	  	  	 	 	}else{
@@ -202,18 +324,8 @@
 	 	 			//console.log(cars);
 	 	 		}
   	  	 	 }
-  	  	 	 
-  	  	 	 var onceCar = {};
-  	  	     onceCar.name = testSpirit.name;
-  	  	 	 onceCar.x1 = 0;
-  	  	     onceCar.x2 = 0;
-  	  	 	 onceCar.x3 = 0;
-  	  		 onceCar.x4 = 0;
-  	  		 onceCar.survivalTime = 0;
-  	  	 	 onceCar.survival = true;
-  	  	 	 onceCar.ai = createAI();
-			 
-  	  	 	 cars[testSpirit.name] = onceCar;
+
+  	  	 	 cars[testSpirit.name] = createAgentAI(testSpirit,viewWidth);
   	  	 	 
   		  	 testLayer.addSpirit(testSpirit);
   			 
@@ -361,6 +473,7 @@
               }
               console.log(jsonObject);
               loadMap(jsonObject);
+              init();
           };
           reader.readAsBinaryString(resultFile);                
       }
@@ -373,8 +486,6 @@
   			addWallFromMap(mapData[key]);
   			
   		}
-  		
-  		createAgent(mapData["wallstart"]);
   		
   	}
   	

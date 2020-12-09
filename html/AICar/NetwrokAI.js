@@ -1,14 +1,199 @@
 
 /**
- * network + 
+ * network + genetic
  */
-var NetWork = {};
+var AF_AI = {};
 
-NetWork.utils = {};
+AF_AI.network = {};
 
-NetWork.active = {};
+AF_AI.genetic = {};
 
-NetWork.instance = function(){
+AF_AI.utils = {};
+
+AF_AI.network.active = {};
+
+AF_AI.genetic.instance = function(){
+	this.populationCount = 0,
+	this.chromosomeCount = 0;
+	this.crossoverRate = 0.7;
+	this.mutationRate = 0.01;
+	this.population = null;
+	
+	this.init = function(){
+	}
+	
+	this.run = function(populationData){
+		this.population = new AF_AI.genetic.population(this,this.populationCount,this.chromosomeCount,populationData);
+		return this.population.run();
+	}
+	
+	this.calculateFitnessFunction = function(x){
+		return x;
+	}
+	
+}
+
+AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
+	this.count = pCount;
+	this.instance = instance;
+	this.bestFitness = 0.0;
+	this.bestChromosome = null;
+	this.totalFitness = 0.0;
+	this.chromosomes = {};
+	this.candidate = null;
+	this.populationData = populationData;
+	
+	this.init = function(){
+		
+		this.candidate = new Array(this.count);
+		
+		for(var i = 0;i<this.count;i++){
+			var chromData = this.populationData[i];
+			console.log("chromData",chromData);
+			this.chromosomes[i] = AF_AI.genetic.chromosome(i,this.cCount,chromData);
+			this.chromosomes[i].fitness = this.instance.calculateFitnessFunction(chromData);
+		}
+		
+	}
+	
+	this.select = function(){
+		
+		//compute the probability
+		for(var i = 0;i<this.count;i++){
+
+			this.chromosomes[i].probability = this.chromosomes[i].fitness / this.totalFitness;
+			
+			if(i == 0){
+				this.chromosomes[i].totalProbability = this.chromosomes[i].probability;
+	        }else{
+	        	this.chromosomes[i].totalProbability = this.chromosomes[i - 1].totalProbability + this.chromosomes[i].probability;
+	        }
+		
+		}
+		
+		//select candidate chromosome
+		for(var i = 0;i<this.count;i++){
+
+			var r = Math.random();
+			for(var j = 0;j<this.count;j++){
+				if(r <= this.chromosomes[j].totalProbability){
+					this.candidate[i] = this.chromosomes[j].codes;
+					break;
+				}
+			}
+
+		}
+		
+		//console.log(this.candidate[0]);
+	}
+	
+	/**
+	 * corss compute
+	 */
+	this.cross = function(){
+		
+		for(var i = 0;i<this.count;i++){
+			
+			if(Math.random() <= this.instance.crossoverRate){
+
+				var index = AF_AI.utils.randomNotEqInt(this.count,i);  //get corss index
+
+				var positlion = AF_AI.utils.randomInt(this.cCount);  //get corss positlion
+				
+				var temp = this.candidate[i].codes[positlion];
+				
+				this.candidate[i].codes[positlion] = this.candidate[index].codes[positlion]; 
+				
+				this.candidate[index].codes[positlion] = temp;
+				
+			}
+
+		}
+		
+	}
+	
+	/**
+	 * mutation compute
+	 */
+	this.mutation = function(){
+		
+		for(var i = 0;i<this.count;i++){
+			
+			if(Math.random() <= this.instance.mutationRate){
+				
+				var positlion = AF_AI.utils.randomInt(this.cCount);  //get mutation positlion
+				
+				this.candidate[i][positlion] = AF_AI.utils.getNumberInND(0,1);
+				
+			}
+
+		}
+		
+	}
+	
+	this.run = function(){
+		
+		this.init();
+		
+		var calculateFitness = AF_AI.genetic.calculateFitness(this.chromosomes);
+		
+		this.totalFitness = calculateFitness.totalFitness;
+		this.bestFitness = calculateFitness.bestFitness;
+		this.bestChromosome = this.chromosomes[calculateFitness.index];
+		
+		this.select();
+		
+		this.cross();
+		
+		this.mutation();
+		
+		return this.candidate;
+		
+	}
+	
+}
+
+/**
+ * codeType:
+ * 0: 无编码
+ * 1: 二进制编码
+ */
+AF_AI.genetic.chromosome = function(index,cCount,chromData){
+	this.index = index;
+	this.count = cCount;
+	this.codes = null;
+	this.codeType = 0;
+	this.fitness = 0.0;
+	this.probability = 0.0;
+	this.totalProbability = 0.0;
+	
+	if(this.codeType == 0){
+		this.codes = chromData.data;
+	}else{
+		this.codes = AF_AI.genetic.decode(chromData.data);
+	}
+	
+}
+
+AF_AI.genetic.calculateFitness = function(chromosomes){
+	var current = 0.0;
+	var index = 0;
+	var totalFitness = 0.0;
+	for(var key in chromosomes){
+		totalFitness += this.chromosomes[key].fitness * 1;
+		if(current < this.chromosomes[key].fitness * 1){
+			current = this.chromosomes[key].fitness;
+			index = key
+		}
+	}
+	return {totalFitness:totalFitness,index:index,fitness:current};
+}
+
+AF_AI.genetic.decode = function(chromData){
+	return chromData;
+}
+
+AF_AI.network.instance = function(){
 	this.layers = new Array();
 	this.output = new Array();
 	
@@ -36,7 +221,66 @@ NetWork.instance = function(){
 	}
 	
 	this.update = function(params){
+
+		var cli = 0;
+		console.log("params",params);
+		for(var i = 0;i<this.layers.length;i++){
+			
+			/**
+			 * 跳过输入层
+			 */
+			if(this.layers[i].layerType != 0){
+
+				var weight = AF_AI.utils.zero2d(this.layers[i].inputNum,this.layers[i].outputNum);
+				
+				var bias = AF_AI.utils.zero(this.layers[i].outputNum);
+				
+				var startWIndex = cli * this.layers[i].inputNum * this.layers[i].outputNum;
+				
+				var startBIndex = cli * this.layers[i].outputNum;
+				
+				for(var x = 0;x<this.layers[i].inputNum;x++){
+					for(var y = 0;y<this.layers[i].outputNum;y++){
+						weight[x][y] = params.w[startWIndex + x * this.layers[i].outputNum + y];
+					}
+				}
+				
+				for(var x = 0;x<this.layers[i].inputNum;x++){
+					bias[x] = params.b[startBIndex + x];
+				}
+				
+				this.layers[i].update(weight,bias);
+				
+				cli++;
+			}
+			
+		}
 		
+	}
+	
+	this.getParams = function(){
+		var params = {w:new Array(),b:new Array()};
+		
+		for(var i = 0;i<this.layers.length;i++){
+			
+			if(this.layers[i].layerType != 0){
+
+				var currentW = AF_AI.utils.matrix2dToArray(this.layers[i].weight);
+				var currentB = this.layers[i].bias;
+				
+				for(var j = 0;j<currentW.length;j++){
+					params.w.push(currentW[j]);
+				}
+				
+				for(var j = 0;j<currentB.length;j++){
+					params.b.push(currentB[j]);
+				}
+				
+			}
+			
+		}
+		
+		return params;
 	}
 	
 }
@@ -49,22 +293,22 @@ NetWork.instance = function(){
  * 0: sigmoid
  * 1: relu
  */
-NetWork.layer = function(){
+AF_AI.network.layer = function(){
 	this.layerType = 0;
 	this.name = null;
 	this.inputNum = 0;
 	this.outputNum = 0;
 	this.activeType = null;
 	this.weight = null;
-	this.bais = null;
+	this.bias = null;
 	this.input = null;
 	this.output = null;
 	
 	this.init = function(){
 		if(this.layerType != 0){
-			this.weight = NetWork.utils.matrix2d(this.inputNum,this.outputNum);
+			this.weight = AF_AI.utils.matrix2d(this.inputNum,this.outputNum);
 			//console.log(this.weight);
-			this.bais = NetWork.utils.matrix(this.outputNum);
+			this.bias = AF_AI.utils.matrix(this.outputNum);
 		}
 	}
 	
@@ -78,21 +322,21 @@ NetWork.layer = function(){
 			this.output = this.input;
 		}else{
 			//console.log(this.outputNum);
-			this.output = NetWork.utils.zero(this.outputNum);
+			this.output = AF_AI.utils.zero(this.outputNum);
 			//console.log(this.output);
 			for(var o = 0;o<this.outputNum;o++){
 				for(var i = 0;i<this.inputNum;i++){
 					this.output[o] = this.output[o] * 1 + this.input[i] * this.weight[i][o];
 				}
-				this.output[o] = this.output[o] + this.bais[o] * 1;
+				this.output[o] = this.output[o] + this.bias[o] * 1;
 			}
 			
 			switch (this.activeType) {
 			case 0:
-				this.output = NetWork.active.sigmoid(this.output);
+				this.output = AF_AI.network.active.sigmoid(this.output);
 				break;
 			case 1:
-				this.output = NetWork.active.relu(this.output);
+				this.output = AF_AI.network.active.relu(this.output);
 				break;
 			default:
 				break;
@@ -103,14 +347,14 @@ NetWork.layer = function(){
 		return this.output;
 	}
 	
-	this.update = function(weight,bais){
+	this.update = function(weight,bias){
 		this.weight = weight;
-		this.bais = bais;
+		this.bias = bias;
 	}
 	
 }
 
-NetWork.active.sigmoid = function(x){
+AF_AI.network.active.sigmoid = function(x){
 	var y = new Array(x.length);
 	for(var i = 0;i<x.length;i++) {
 		y[i] = (1 / (1 + Math.exp(-x[i])));
@@ -118,7 +362,7 @@ NetWork.active.sigmoid = function(x){
 	return y;
 }
 
-NetWork.active.relu = function(x){
+AF_AI.network.active.relu = function(x){
 	var y = new Array(x.length);
 	for(var i = 0;i<x.length;i++) {
 		if(x[i] > 0) {
@@ -130,7 +374,7 @@ NetWork.active.relu = function(x){
 	return y;
 }
 
-NetWork.utils.zero = function(n){
+AF_AI.utils.zero = function(n){
 	var x = new Array(n);
 	for(var i = 0;i<n;i++){
 		x[i] = 0;
@@ -138,7 +382,7 @@ NetWork.utils.zero = function(n){
 	return x;
 }
 
-NetWork.utils.zero2d = function(n,m){
+AF_AI.utils.zero2d = function(n,m){
 	var x = new Array(n);
 	for(var i = 0;i<n;i++){
 		var y = new Array(m);
@@ -150,35 +394,35 @@ NetWork.utils.zero2d = function(n,m){
 	return x;
 }
 
-NetWork.utils.matrix = function(n){
+AF_AI.utils.matrix = function(n){
 	var x = new Array(n);
 	for(var i = 0;i<n;i++){
-		x[i] = NetWork.utils.getNumberInND();
+		x[i] = AF_AI.utils.getNumberInND();
 	}
 	return x;
 }
 
-NetWork.utils.matrix2d = function(n,m){
+AF_AI.utils.matrix2d = function(n,m){
 	var x = new Array(n);
 	for(var i = 0;i<n;i++){
 		var y = new Array(m);
 		for(var j = 0;j<m;j++){
-			y[j] = NetWork.utils.getNumberInND();
+			y[j] = AF_AI.utils.getNumberInND();
 		}
 		x[i] = y;
 	}
 	return x;
 }
 
-NetWork.utils.getNumberInND = function(mean,std_dev){
+AF_AI.utils.getNumberInND = function(mean,std_dev){
 	if(mean = null || std_dev == null){
 		mean = 0;
 		std_dev = 1;
 	}
-    return mean+(NetWork.utils.randomND()*std_dev);
+    return mean+(AF_AI.utils.randomND()*std_dev);
 }
 
-NetWork.utils.randomND = function(){
+AF_AI.utils.randomND = function(){
     var u=0.0, v=0.0, w=0.0, c=0.0;
     do{
         //获得两个（-1,1）的独立随机变量
@@ -192,4 +436,27 @@ NetWork.utils.randomND = function(){
     //当然，因为这个函数运行较快，也可以扔掉一个
     //return [u*c,v*c];
     return u*c;
+}
+
+AF_AI.utils.randomInt = function(x){
+    return Math.ceil(Math.random() * x);
+}
+
+AF_AI.utils.randomNotEqInt = function(x,y){
+	var temp = Math.ceil(Math.random() * x);
+	if(temp == y){
+		temp = AF_AI.utils.randomNotEqInt(x,y);
+	}
+    return temp;
+}
+
+AF_AI.utils.matrix2dToArray = function(x){
+	var y = new Array();
+	
+	for(var i = 0;i<x.length;i++){
+		for(var j = 0;j<x[i].length;j++){
+			y[i * x[i].length + j * 1] = x[i][j];
+		}
+	}
+    return y;
 }
