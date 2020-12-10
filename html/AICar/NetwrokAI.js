@@ -139,11 +139,11 @@ AF_AI.genetic.population = function(instance,pCount,cCount,populationData){
 		var calculateFitness = AF_AI.genetic.calculateFitness(this.chromosomes);
 		
 		this.totalFitness = calculateFitness.totalFitness;
-		this.bestFitness = calculateFitness.bestFitness;
+		this.bestFitness = calculateFitness.fitness;
 		this.bestChromosome = this.chromosomes[calculateFitness.index];
 		this.bestIndex = calculateFitness.index;
 		
-		console.log(calculateFitness);
+		//console.log(calculateFitness);
 		
 		this.select();
 		
@@ -519,7 +519,6 @@ AF_AI.utils.randomNotEqInt = function(x,y){
 
 AF_AI.utils.matrix2dToArray = function(x){
 	var y = new Array();
-	
 	for(var i = 0;i<x.length;i++){
 		for(var j = 0;j<x[i].length;j++){
 			y[i * x[i].length + j * 1] = x[i][j];

@@ -39,6 +39,13 @@
    	<br/>
    	
    	<div class="consoleDiv">
+	   	age:<span id="age">0</span>||
+	   	bestAgent:<span id="bestAgent">0</span>||
+	   	bestFitness:<span id="bestFitness">0</span>||
+	   	totalFitness:<span id="totalFitness">0</span>
+   	</div>
+   	
+   	<div class="consoleDiv">
 	   	
 	   	load map:
 	   	<input type="file" onchange="showDataByBinaryString()" name="jsonFile" id="jsonFile" multiple="multiple"/>
@@ -132,6 +139,8 @@
 	  	 
 		 //console.log("end",params);
 		 
+		 showInfo();
+		 
 		 var index = 0;
 		 for(var key in cars){
 			var param = {data:params[index],fitness:cars[key].survivalTime};
@@ -148,8 +157,14 @@
 		//console.log("======================");
   	 }
   	 
+  	 function showInfo(){
+  		document.getElementById('age').innerText  = age;
+  		document.getElementById('bestAgent').innerText  = trainer.population.bestIndex;
+  		document.getElementById('bestFitness').innerText  = trainer.population.bestFitness;
+  		document.getElementById('totalFitness').innerText  = trainer.population.totalFitness;
+  	 }
+  	 
   	 function init(){
-  		
 		//创建cars
    		createAgent(maps["wallstart"]);
   		//创建weight训练器
