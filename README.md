@@ -7,3 +7,5 @@ Alchemy Furnace 2D engine for javascript.
 demo预览地址
 
 http://119.3.123.193:8011/AICar
+
+![aiCar demo](http://chuantu.xyz/t6/741/1609331671x1700340378.png)
