@@ -2,7 +2,7 @@
 Alchemy Furnace 2D engine for javascript.
 
 
-基于神经网络+遗传算法实现AI塞车游戏
+## 基于神经网络+遗传算法实现AI塞车游戏
 
 demo预览地址
 
