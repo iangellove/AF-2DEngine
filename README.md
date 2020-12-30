@@ -9,3 +9,5 @@ demo预览地址
 http://119.3.123.193:8011/AICar
 
 ![aiCar demo](http://119.3.123.193:1800/fileData/aicar.png)
+
+<img src="http://static.runoob.com/images/runoob-logo.png" width="50%">
