@@ -188,6 +188,7 @@ Engine2D.scene = function(){
 		if(window.requestAnimationFrame){
 			Engine2D.play(this.play,this);
 		}else{
+			throw new Error("not support this browser,plase use the chrome browse open this html.");
 //			setInterval(function(){
 //				that.play(that);
 //			},1000/that.fps);
@@ -200,6 +201,7 @@ Engine2D.scene = function(){
 //		o.instance.FPS();
 		if(o.hitTest){
 			Engine2D.engine.hitTest(o);
+			Engine2D.engine.afterHitTest(o);
 		}
 		for(var key in o.layerList){
 			o.layerList[key].run();
@@ -207,6 +209,10 @@ Engine2D.scene = function(){
 	}
 	
 	this.update = function(){
+		
+	}
+	
+	this.afterHitTest = function(){
 		
 	}
 	
@@ -639,6 +645,19 @@ Engine2D.util.drawLine = function(spirit){
 	spirit.context.stroke();
 }
 
+/**
+ * x1=x+s·cosθ
+ * y1=y+s·sinθ
+ */
+Engine2D.util.drawLine2 = function(spirit,point,rotate,dis,color,alpha){
+	spirit.context.beginPath();
+	spirit.context.moveTo(point.x,point.y);
+	spirit.context.strokeStyle = color;//填充颜色,默认是黑色
+	spirit.context.globalAlpha = alpha;//透明度
+	spirit.context.lineTo(point.x + Engine2D.util.cos(rotate) * dis,point.y + Engine2D.util.sin(rotate) * dis);
+	spirit.context.stroke();
+}
+
 Engine2D.util.sin = function(angle){
 	return Math.sin(angle * Math.PI / 180);
 }
@@ -666,6 +685,12 @@ Engine2D.util.randomColor = function (){
 }
 
 Engine2D.engine = {};
+
+Engine2D.engine.afterHitTest = function(scene){
+	if(scene!=null && scene.afterHitTest!=null){
+		scene.afterHitTest();
+	}
+}
 
 Engine2D.engine.hitTest = function(scene){
 	
@@ -1087,23 +1112,63 @@ Engine2D.engine.RectToLineTestV2 = function(a,b){
 	var lineA = {x:b.x,y:b.y};
 	var lineB = {x:b.x + Engine2D.util.cos(b.rotate) * b.width,y:b.y + Engine2D.util.sin(b.rotate) * b.width};
 
-	var result = false;
+	var hitResult = false;
 	
-	result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftTop,rotateLeftBottom);
+	var minDis = null;
 	
-	if(!result){
-		result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftTop,rotateRightTop);
+	var result1 = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftTop,rotateLeftBottom);
+
+	var result2 = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftTop,rotateRightTop);
+
+	var result3 = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateRightTop,rotateRightBottom);
+
+	var result4 = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftBottom,rotateRightBottom);
+	
+	if(result1){
+		var onceDis = Engine2D.engine.Vec2.distance(lineA,result1);
+		if(minDis == null){
+			minDis = onceDis;
+			hitResult = result1;
+		}else if(minDis > onceDis){
+			minDis = onceDis;
+			hitResult = result1;
+		}
 	}
 	
-	if(!result){
-		result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateRightTop,rotateRightBottom);
+	if(result2){
+		var onceDis = Engine2D.engine.Vec2.distance(lineA,result2);
+		if(minDis == null){
+			minDis = onceDis;
+			hitResult = result2;
+		}else if(minDis > onceDis){
+			minDis = onceDis;
+			hitResult = result2;
+		}
 	}
 	
-	if(!result){
-		result = Engine2D.engine.LineToLineTestV3(lineA,lineB,rotateLeftBottom,rotateRightBottom);
+	if(result3){
+		var onceDis = Engine2D.engine.Vec2.distance(lineA,result3);
+		if(minDis == null){
+			minDis = onceDis;
+			hitResult = result3;
+		}else if(minDis > onceDis){
+			minDis = onceDis;
+			hitResult = result3;
+		}
 	}
-		
-	return result;
+	
+	if(result4){
+		var onceDis = Engine2D.engine.Vec2.distance(lineA,result4);
+		if(minDis == null){
+			minDis = onceDis;
+			hitResult = result4;
+		}else if(minDis > onceDis){
+			minDis = onceDis;
+			hitResult = result4;
+		}
+	}
+	
+	return hitResult;
 }
 
 Engine2D.engine.RectToLineTest = function(a,b){

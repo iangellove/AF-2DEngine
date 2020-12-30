@@ -57,15 +57,23 @@
   
   <script type="text/javascript">
   	 
-  	 var rotateSpeed = 4;
+  	 var rotateSpeed = 3;
   	 
   	 var forwardSpeed = 10;
   	 
-  	 var viewWidth = 180;
+  	 var maxSpeed = 20;
   	 
-  	 var carCount = 20;
+  	 var minSpeed = 8;
+  	 
+  	 var fSpeed = 1;
+  	 
+  	 var viewWidth = 800;
+  	 
+  	 var carCount = 30;
   	 
   	 var age = 0;
+  	 
+  	 var ageTime = 0;
   	 
   	 var maps = {};
   	 
@@ -89,6 +97,41 @@
   	 	isNewAge();
   	 	clearCarsView();
   	 }
+  	
+  	//统一处理碰撞测试后的结果
+  	startScene.afterHitTest = function(){
+		//计算各车最近的击中点
+		for(var key in cars){
+			//var onceCar = cars[key];
+			//计算每条射线最近击中点
+			for(var i = 0;i<cars[key].x.length;i++){
+				var minHitDis = viewWidth;
+				var minHitPoint = null;
+				if(cars[key].x[i].seft!=null){
+					//获取击中点
+					for(var j = 0;j<cars[key].x[i].hitResult.length;j++){
+						var hitPoiont = cars[key].x[i].hitResult[j];
+						var dis = Engine2D.engine.Vec2.distance2(cars[key].spirit.centerX(),cars[key].spirit.centerY(),hitPoiont.x,hitPoiont.y);
+						if(minHitDis>dis){
+							minHitDis = dis;
+							minHitPoint = hitPoiont;
+						}
+					}	
+					
+					if(minHitPoint!=null){
+						Engine2D.util.drawPoint(cars[key].spirit,minHitPoint.x,minHitPoint.y,3,"#4A4AFF",0.5);
+						//console.log(cars[key].seft);
+						var point = {x:cars[key].spirit.centerX(),y:cars[key].spirit.centerY()};
+						Engine2D.util.drawLine2(cars[key].spirit,point,cars[key].x[i].seft.rotate,minHitDis,"#EE3B3B",1);
+					}
+				}
+				
+				cars[key].x[i].dis = minHitDis;
+			}
+			
+		}
+  		
+  	}
   	 
   	 engine.addScene(startScene);
   	 
@@ -106,10 +149,12 @@
 
   		 for(var key in cars){
   			 if(cars[key].survival){
-  				cars[key].x1 = viewWidth;
-  	  			cars[key].x2 = viewWidth;
-  	  			cars[key].x3 = viewWidth;
-  	  			cars[key].x4 = viewWidth;
+  	  			for(var i = 0;i<cars[key].x.length;i++){
+  	  				cars[key].x[i].hitResult = new Array();
+  	  				cars[key].x[i].hitObj = null;
+  	  				cars[key].x[i].dis = viewWidth;
+  	  				cars[key].x[i].hitPoint = null;
+  	  			}
   			 }
   		 }
   		 
@@ -123,7 +168,7 @@
   				return;
   			 }
   		 }
-
+	
   		 console.log("in new age.",age);
   		 
   		 var params =  new Array();
@@ -147,12 +192,17 @@
 			cars[key].ai.updateV2(param);
 			cars[key].survival = true;
 			cars[key].survivalTime = 0;
+			cars[key].forwardSpeed = forwardSpeed;
+			cars[key].dis = 0;
+			cars[key].finish = false;
 			index++;
 		 }
 		
 		 //还原agent
 		 resetAgent(maps["wallstart"]);
-		 
+
+  		 ageTime = 0;
+  		 
 		 age++;
 		//console.log("======================");
   	 }
@@ -168,7 +218,7 @@
 		//创建cars
    		createAgent(maps["wallstart"]);
   		//创建weight训练器
-  		trainer = createAITrainer(carCount,121);
+  		trainer = createAITrainer(carCount,362);
 		//启动
   	  	play();
   	 }
@@ -187,7 +237,35 @@
   		 trainer.crossoverRate = 0.7;
   		 trainer.mutationRate = 0.3;
   		 trainer.calculateFitnessFunction = function(x){
-  			 return cars["agent"+x].survivalTime;
+  			 //var max = 0;
+  			 var winMin = 99999999;
+  			 var winFisrt = null;
+  			 for(var key in cars){
+  				
+  				if(cars[key].finish){
+  					if(winMin>cars[key].survivalTime){
+  						winMin = cars[key].survivalTime;
+  						winFisrt = key;
+  					}
+  				} 
+  				 
+  				//if(max<cars[key].survivalTime){
+  					//max = cars[key].survivalTime;
+  				//}
+  			 }
+  			 
+  			 //var st = cars["agent"+x].survivalTime / max;
+  	  		 
+  			 //var dt = cars["agent"+x].dis / cars["agent"+x].survivalTime / maxSpeed;
+			 
+  			 //var fitness = st * 10 + dt * 6;
+  			 var fitness = cars["agent"+x].dis;
+  			 console.log("winFisrt:"+winFisrt);
+  			 if(winFisrt!=null && winFisrt == ("agent"+x)){
+  				fitness += 10000;
+  			 }
+  			 
+  			 return fitness;
   		 }
   		 trainer.init();
   		 return trainer;
@@ -195,34 +273,35 @@
   	 
   	 //创建AI神经网络
   	 function createNN(){
+  		 
   		 //创建神经网络
   		 var nn = new AF_AI.network.instance();
   		 
   		 var inputLayer = new AF_AI.network.layer();
   		 inputLayer.layerType = 0;
   		 inputLayer.name = "inputLayer";
-  		 inputLayer.inputNum = 5;
-  		 inputLayer.outputNum = 5;
+  		 inputLayer.inputNum = 9;
+  		 inputLayer.outputNum = 9;
   		 inputLayer.activeType = null;
   		 
   		 var fullyLayer1 = new AF_AI.network.layer();
   		 fullyLayer1.layerType = 1;
   		 fullyLayer1.name = "fullyLayer1";
-  		 fullyLayer1.inputNum = 5;
-  		 fullyLayer1.outputNum = 20;
+  		 fullyLayer1.inputNum = 9;
+  		 fullyLayer1.outputNum = 30;
   		 fullyLayer1.activeType = 0;
   		 
  		 var fullyLayer2 = new AF_AI.network.layer();
  		 fullyLayer2.layerType = 1;
  		 fullyLayer2.name = "fullyLayer2";
- 		 fullyLayer2.inputNum = 20;
- 		 fullyLayer2.outputNum = 1;
+ 		 fullyLayer2.inputNum = 30;
+ 		 fullyLayer2.outputNum = 2;
  		 fullyLayer2.activeType = 0;
  		 
   		 nn.addLayer(inputLayer);
   		 nn.addLayer(fullyLayer1);
   		 nn.addLayer(fullyLayer2);
-  		 
+
   		 nn.init();
   		 
   		 return nn;
@@ -248,18 +327,27 @@
   		 
   	 }
   	 
-  	 function createAgentAI(spirit,viewWidth){
+  	 function createAgentAI(spirit,viewWidth,xCount){
   		var agent = {};
   		agent.name = spirit.name;
   		agent.spirit = spirit;
-  		agent.x1 = viewWidth;
-  		agent.x2 = viewWidth;
-  		agent.x3 = viewWidth;
-  		agent.x4 = viewWidth;
-  		agent.x5 = viewWidth;
+  		agent.x = new Array();
+  		for(var i = 0;i<xCount;i++){
+  			var ix = {};
+  			ix.dis = viewWidth;
+  			ix.hitResult = new Array();
+  			ix.hitObj = null;
+  			ix.hitPoiont = null;
+  			ix.seft = null;
+  			agent.x.push(ix);
+  		}
   		agent.survivalTime = 0;
   		agent.survival = true;
   		agent.ai = createNN();
+  		agent.speed = forwardSpeed;
+  		agent.dis = 0;
+  		agent.finish = false;
+  		agent.rotate = 0;
   	 	return agent;
   	 }
   	 
@@ -293,24 +381,56 @@
   		  	 testSpirit.style = Engine2D.util.randomColor();
   		  	 
   	  	 	 testSpirit.update = function(){
-
+				
+  	  	 		ageTime++;
+  	  	 		 
   	  	 		if(cars[this.name].survival){
   	  	 			
   	  	 			cars[this.name].survivalTime++;
-  	  	 			
-  	  	 			if(cars[this.name].survivalTime > 1){
 
-  	  	  	 			var carInput = [cars[this.name].x1/viewWidth,cars[this.name].x2/viewWidth,cars[this.name].x3/viewWidth,cars[this.name].x4/viewWidth,cars[this.name].x5/viewWidth];
+  	  	 			if(cars[this.name].survivalTime > 1){
+						
+  	  	 				cars[this.name].rotate = (this.rotate % 360) /360;
+  	  	 				
+  	  	  	 			//var carInput = [cars[this.name].x1/viewWidth,cars[this.name].x2/viewWidth,cars[this.name].x3/viewWidth,cars[this.name].x4/viewWidth,cars[this.name].x5/viewWidth
+  	  	  	 			//cars[this.name].x6/viewWidth,cars[this.name].x7/viewWidth,cars[this.name].speed/maxSpeed,cars[this.name].rotate];
+  	  	  	 			
+  	  	  	 			var carInput = new Array();
+  	  	  	 			for(var i = 0;i<cars[this.name].x.length;i++){
+  	  	  	 				carInput.push(cars[this.name].x[i].dis/viewWidth);
+  	  	  	 			}
+  	  	  	 			
+  	  	  	 			carInput.push(cars[this.name].speed/maxSpeed);
+  	  	  	 			carInput.push(cars[this.name].rotate);
+  	  	  	 			
   	  	  	 			//console.log(carInput);
   	  	  	  	 	 	var random = cars[this.name].ai.forword(carInput);
   	  	  	  	 	 	//console.log(this.name,random);
-  	  	  	  	 	 	if(random<0.5){
+  	  	  	  	 	 	if(random[0]<0.5){
   	  	  	  	 	 		Engine2D.action.rotate(this,-rotateSpeed);
-  	  	  	  	 	 	}else{
-  	  	  	  	 	 		Engine2D.action.rotate(this,rotateSpeed);
+  	  	  	  	 	 	}else if(random[0]>0.5){
+  	  	  	  	 			Engine2D.action.rotate(this,rotateSpeed);
   	  	  	  	 	 	}
   	  	  	  	 	 	
-  	  	  	  	 		Engine2D.action.forward(this,forwardSpeed,true);
+  	  	  	  	 	 	var speed = cars[this.name].speed;
+  	  	  	  	 	 	
+  	  	  	  	 	 	if(random[1]<0.5){
+  	  	  	  	 			speed = cars[this.name].speed * 1 + fSpeed * 1;
+  	  	  	  	 	 	}else if(random[1]>0.5){
+  	  	  	  	 			speed = cars[this.name].speed * 1 - fSpeed * 1;
+  	  	  	  	 	 	}
+  	  	  	  	 	 	
+  	  	  	  	 	 	if(speed > maxSpeed){
+  	  	  	  	 			speed = maxSpeed;
+  	  	  	  	 	 	}else if(speed < minSpeed){
+  	  	  	  	 			speed = minSpeed;
+  	  	  	  	 	 	}
+  	  	  	  	 	 	
+  	  	  	  	        cars[this.name].speed = speed;
+  	  	  	  	 	 	
+  	  	  	  			cars[this.name].dis = cars[this.name].dis * 1 + speed * 1;
+  	  	  	  	        
+  	  	  	  	 		Engine2D.action.forward(this,speed,true);
   	  	  	  	 	
   	  	 			}
   	  	 			
@@ -326,12 +446,13 @@
 					//console.log(testSpirit.name);
 	 	 			cars[this.name].survival = false;
 	 	 		}else if(cars[this.name].survival && hitSpirit.name == "wallwin"){
-	 	 			cars[this.name].survivalTime += 1000;
+	 	 			cars[this.name].survivalTime += 100;
 	 	 			cars[this.name].survival = false;
+	 	 			cars[this.name].finish = true;
 	 	 		}
   	  	 	 }
 
-  	  	 	 cars[testSpirit.name] = createAgentAI(testSpirit,viewWidth);
+  	  	 	 cars[testSpirit.name] = createAgentAI(testSpirit,viewWidth,7);
   	  	 	 
   		  	 testLayer.addSpirit(testSpirit);
   			 
@@ -343,12 +464,13 @@
   		  	 testLineSpirit1.isFollowParent = 0;
   		  	 testLineSpirit1.width = viewWidth;
   		  	 testLineSpirit1.rotate = 0;
-  		  	 testLineSpirit1.relativeRotate = -45;
+  		  	 testLineSpirit1.relativeRotate = -90;
   		  	 testLineSpirit1.x = 0;
   		  	 testLineSpirit1.y = 0;
   		  	 testLineSpirit1.relativeX = 0;
   		  	 testLineSpirit1.relativeY = 0;
   		  	 testLineSpirit1.style = "#EE3B3B";
+  		  	 testLineSpirit1.alpha = 0;
   			 
   			 testLineSpirit1.update = function(){
   			 	//this.style = "#EE3B3B";
@@ -357,11 +479,8 @@
   			 testLineSpirit1.hitTest = function(hitSpirit,result){
   	  	 	 	if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
-  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
-  	  	 	 		var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
-	  	 	 		if(cars[this.parent.name].x1 > dis){
-	  	 	 			cars[this.parent.name].x1 = dis;
-	  	 	 		}
+  	  	 	 		cars[this.parent.name].x[0].hitResult.push(result);
+  	  	 	 		cars[this.parent.name].x[0].seft = this;
   	  	 	 	}
   	  	 	 }
   	  	 	 
@@ -373,12 +492,13 @@
   		  	 testLineSpirit2.isFollowParent = 0;
   		  	 testLineSpirit2.width = viewWidth;
   		  	 testLineSpirit2.rotate = 0;
-  		  	 testLineSpirit2.relativeRotate = -20;
+  		  	 testLineSpirit2.relativeRotate = -30;
   		  	 testLineSpirit2.x = 0;
   		  	 testLineSpirit2.y = 0;
   		  	 testLineSpirit2.relativeX = 0;
   		  	 testLineSpirit2.relativeY = 0;
   		  	 testLineSpirit2.style = "#EE3B3B";
+  		  	 testLineSpirit2.alpha = 0;
   			 
   			 testLineSpirit2.update = function(){
   			 	//this.style = "#EE3B3B";
@@ -387,12 +507,8 @@
   			 testLineSpirit2.hitTest = function(hitSpirit,result){
   				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
-  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
-  	  	 	 		var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
-  	  	 	 		if(cars[this.parent.name].x2 > dis){
-  	  	 	 			cars[this.parent.name].x2 = dis;
-  	  	 	 		}
-  	  	 	 		
+  					cars[this.parent.name].x[1].hitResult.push(result);
+  					cars[this.parent.name].x[1].seft = this;
   	  	 	 	}
   	  	 	 }
   	  	 	 
@@ -404,13 +520,14 @@
   		  	 testLineSpirit3.isFollowParent = 0;
   		  	 testLineSpirit3.width = viewWidth;
   		  	 testLineSpirit3.rotate = 0;
-  		  	 testLineSpirit3.relativeRotate = 20;
+  		  	 testLineSpirit3.relativeRotate = 30;
   		  	 testLineSpirit3.x = 0;
   		  	 testLineSpirit3.y = 0;
   		  	 testLineSpirit3.relativeX = 0;
   		  	 testLineSpirit3.relativeY = 0;
   		  	 testLineSpirit3.style = "#EE3B3B";
-  			 
+  		  	 testLineSpirit3.alpha = 0;
+  		  	 
   			 testLineSpirit3.update = function(){
   			 	//this.style = "#EE3B3B";
   			 }
@@ -418,11 +535,8 @@
   			 testLineSpirit3.hitTest = function(hitSpirit,result){
   				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
-  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
-  					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
-  	  	 	 		if(cars[this.parent.name].x3 > dis){
-  	  	 	 			cars[this.parent.name].x3 = dis;
-  	  	 	 		}
+  					cars[this.parent.name].x[2].hitResult.push(result);
+  					cars[this.parent.name].x[2].seft = this;
   	  	 	 	}
   	  	 	 }
   			
@@ -434,13 +548,14 @@
   		  	 testLineSpirit4.isFollowParent = 0;
   		  	 testLineSpirit4.width = viewWidth;
   		  	 testLineSpirit4.rotate = 0;
-  		  	 testLineSpirit4.relativeRotate = 45;
+  		  	 testLineSpirit4.relativeRotate = 90;
   		  	 testLineSpirit4.x = 0;
   		  	 testLineSpirit4.y = 0;
   		  	 testLineSpirit4.relativeX = 0;
   		  	 testLineSpirit4.relativeY = 0;
   		  	 testLineSpirit4.style = "#EE3B3B";
-  			 
+  		  	 testLineSpirit4.alpha = 0;
+  		  	 
   			 testLineSpirit4.update = function(){
   			 	//this.style = "#EE3B3B";
   			 }
@@ -448,11 +563,8 @@
   			 testLineSpirit4.hitTest = function(hitSpirit,result){
   				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
   	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
-  	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
-  					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
-  	  	 	 		if(cars[this.parent.name].x4 > dis){
-  	  	 	 			cars[this.parent.name].x4 = dis;
-  	  	 	 		}
+  					cars[this.parent.name].x[3].hitResult.push(result);
+  					cars[this.parent.name].x[3].seft = this;
   	  	 	 	}
   	  	 	 }
   			 
@@ -470,7 +582,8 @@
  		  	 testLineSpirit5.relativeX = 0;
  		  	 testLineSpirit5.relativeY = 0;
  		  	 testLineSpirit5.style = "#EE3B3B";
- 			 
+ 		  	 testLineSpirit5.alpha = 0;
+ 		  	 
  			 testLineSpirit5.update = function(){
  			 	//this.style = "#EE3B3B";
  			 }
@@ -478,11 +591,64 @@
  			 testLineSpirit5.hitTest = function(hitSpirit,result){
  				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
  	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
- 	  	 	 		Engine2D.util.drawPoint(hitSpirit,result.x,result.y,3,"#4A4AFF",0.3);
- 					var dis = Engine2D.engine.Vec2.distance2(this.x,this.y,result.x,result.y);
- 	  	 	 		if(cars[this.parent.name].x5 > dis){
- 	  	 	 			cars[this.parent.name].x5 = dis;
- 	  	 	 		}
+ 					cars[this.parent.name].x[4].hitResult.push(result);
+ 					cars[this.parent.name].x[4].seft = this;
+ 	  	 	 	}
+ 	  	 	 }
+ 			 
+ 			var testLineSpirit6 = new Engine2D.spirit();
+ 			testLineSpirit6.name = testSpirit.name + "_testLine6";
+ 			testLineSpirit6.spiritType = 0;
+ 			testLineSpirit6.orgType = 2;
+ 			testLineSpirit6.substanceType = 1;
+ 			testLineSpirit6.isFollowParent = 0;
+ 			testLineSpirit6.width = viewWidth;
+ 			testLineSpirit6.rotate = 0;
+ 			testLineSpirit6.relativeRotate = -60;
+ 			testLineSpirit6.x = 0;
+ 			testLineSpirit6.y = 0;
+ 			testLineSpirit6.relativeX = 0;
+ 			testLineSpirit6.relativeY = 0;
+ 			testLineSpirit6.style = "#EE3B3B";
+ 			testLineSpirit6.alpha = 0; 
+ 			
+ 			testLineSpirit6.update = function(){
+			 	//this.style = "#EE3B3B";
+			}
+			 
+ 			testLineSpirit6.hitTest = function(hitSpirit,result){
+				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
+	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+					cars[this.parent.name].x[5].hitResult.push(result);
+					cars[this.parent.name].x[5].seft = this;
+	  	 	 	}
+	  	 	 }
+			 
+			 var testLineSpirit7 = new Engine2D.spirit();
+			 testLineSpirit7.name = testSpirit.name + "_testLine7";
+			 testLineSpirit7.spiritType = 0;
+			 testLineSpirit7.orgType = 2;
+			 testLineSpirit7.substanceType = 1;
+			 testLineSpirit7.isFollowParent = 0;
+			 testLineSpirit7.width = viewWidth;
+			 testLineSpirit7.rotate = 0;
+			 testLineSpirit7.relativeRotate = 60;
+			 testLineSpirit7.x = 0;
+			 testLineSpirit7.y = 0;
+			 testLineSpirit7.relativeX = 0;
+			 testLineSpirit7.relativeY = 0;
+			 testLineSpirit7.style = "#EE3B3B";
+			 testLineSpirit7.alpha = 0;
+			 
+			 testLineSpirit7.update = function(){
+ 			 	//this.style = "#EE3B3B";
+ 			 }
+ 			 
+			 testLineSpirit7.hitTest = function(hitSpirit,result){
+ 				if(hitSpirit.name.indexOf("wall")>=0 && hitSpirit.name != "wallstart" && hitSpirit.name != "wallwin"){
+ 	  	 	 		//console.log(this.name+"===>hit:"+hitSpirit.name,"=====:",result.point.x,result.point.y);
+ 					cars[this.parent.name].x[6].hitResult.push(result);
+ 					cars[this.parent.name].x[6].seft = this;
  	  	 	 	}
  	  	 	 }
 
@@ -491,6 +657,8 @@
   	  	 	 testSpirit.addchild(testLineSpirit3);
   	  	 	 testSpirit.addchild(testLineSpirit4);
   	  	 	 testSpirit.addchild(testLineSpirit5);
+  	  	 	 testSpirit.addchild(testLineSpirit6);
+  	  		 testSpirit.addchild(testLineSpirit7);
   	  	 }
   		 
   	 }
