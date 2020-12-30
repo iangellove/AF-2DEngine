@@ -8,4 +8,4 @@ demo预览地址
 
 http://119.3.123.193:8011/AICar
 
-![Fileter_transaction](https://gitee.com/fowner/imge/raw/master/Fileter_transaction.png)
+![aicar demo](http://119.3.123.193:1800/fileData/aicar.png)
